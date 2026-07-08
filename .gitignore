@@ -1,0 +1,28 @@
+# Virtual Environment
+venv/
+env/
+.env
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Data and Logs
+data/GLISM/
+dataset_tmp/
+new_pipeline_dataset/
+logs/
+*.csv
+
+# SQLite Databases
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+
+# OS generated files
+.DS_Store
+Thumbs.db
