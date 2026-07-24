@@ -124,7 +124,7 @@ TERMINAL_STATUSES = {STATUS_COMPLETE, STATUS_REJECTED}
 @dataclass
 class PipelineConfig:
     # Target / stopping condition
-    target_glaciers: int = 100
+    target_glaciers: int = 12000
     random_seed: int = 42
 
     # Filtering
@@ -164,7 +164,7 @@ class PipelineConfig:
     # state machine is safe to parallelize across glaciers because each
     # glacier owns its own tmp dir and DB rows are updated with row-level
     # transactions keyed by glims_id).
-    num_workers: int = 1
+    num_workers: int = 24
 
     # Logging
     log_every_n_glaciers: int = 1  # statistics flush frequency
@@ -354,29 +354,46 @@ class StateStore:
     happens implicitly: a COMMIT'd row *is* the checkpoint."""
 
     def __init__(self, db_path: str):
+        import threading
         self.db_path = db_path
+        self._lock = threading.Lock()
+        self._local = threading.local()
+        
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(db_path, timeout=60, isolation_level=None)
-        self.conn.row_factory = sqlite3.Row
-        # WAL mode: survives crashes better, allows concurrent readers.
-        self.conn.execute("PRAGMA journal_mode=WAL;")
-        self.conn.execute("PRAGMA synchronous=FULL;")  # durability over speed
-        self.conn.executescript(SCHEMA)
+        # Initialize schema once
+        init_conn = sqlite3.connect(db_path, timeout=60, isolation_level=None)
+        init_conn.execute("PRAGMA journal_mode=WAL;")
+        init_conn.execute("PRAGMA synchronous=FULL;")
+        init_conn.executescript(SCHEMA)
+        init_conn.close()
+
+    @property
+    def conn(self):
+        if not hasattr(self._local, "conn"):
+            c = sqlite3.connect(self.db_path, timeout=60, isolation_level=None)
+            c.row_factory = sqlite3.Row
+            c.execute("PRAGMA journal_mode=WAL;")
+            c.execute("PRAGMA synchronous=FULL;")
+            self._local.conn = c
+        return self._local.conn
 
     def close(self):
-        self.conn.close()
+        if hasattr(self._local, "conn"):
+            self._local.conn.close()
+            del self._local.conn
 
     @contextmanager
     def tx(self):
         """Explicit transaction context manager (isolation_level=None means
         autocommit unless we BEGIN ourselves)."""
-        self.conn.execute("BEGIN IMMEDIATE;")
-        try:
-            yield self.conn
-            self.conn.execute("COMMIT;")
-        except Exception:
-            self.conn.execute("ROLLBACK;")
-            raise
+        with self._lock:
+            self.conn.execute("BEGIN IMMEDIATE;")
+            try:
+                yield self.conn
+                self.conn.execute("COMMIT;")
+            except Exception:
+                self.conn.execute("ROLLBACK;")
+                raise
 
     # ---------------- glaciers ----------------
 
@@ -1359,29 +1376,65 @@ class GlacierPipeline:
         target = self.cfg.target_glaciers
         checkpoint_counter = 0
 
-        while True:
-            completed = self.store.count_status(STATUS_COMPLETE)
-            if completed >= target:
-                self.logger.info(f"Target reached: {completed}/{target} completed glaciers.")
-                break
+        import concurrent.futures
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.cfg.num_workers) as executor:
+            futures = set()
+            active_glims_ids = set()
 
-            row = self.store.next_pending_glacier()
-            if row is None:
-                self.logger.warning(
-                    f"No more candidate glaciers available. Completed {completed}/{target}. "
-                    "Consider widening filters or increasing GLIMS coverage."
-                )
-                break
+            while True:
+                completed = self.store.count_status(STATUS_COMPLETE)
+                if completed >= target:
+                    self.logger.info(f"Target reached: {completed}/{target} completed glaciers.")
+                    try:
+                        executor.shutdown(wait=False, cancel_futures=True)
+                    except TypeError:
+                        pass
+                    break
 
-            self.logger.info(f"Processing glacier {row['glims_id']} (region={row['region']}, "
-                              f"split={row['split']}, status={row['status']})")
-            self.process_one(row["glims_id"])
+                while len(futures) < self.cfg.num_workers:
+                    pending_rows = self.store.conn.execute(
+                        "SELECT * FROM glaciers WHERE status NOT IN (?, ?) "
+                        "ORDER BY CASE status WHEN ? THEN 0 WHEN ? THEN 1 ELSE 2 END, last_update ASC "
+                        "LIMIT ?",
+                        (STATUS_COMPLETE, STATUS_REJECTED, STATUS_DOWNLOADING, STATUS_VALIDATING, self.cfg.num_workers * 4)
+                    ).fetchall()
+                    
+                    added_any = False
+                    for row in pending_rows:
+                        glims_id = row["glims_id"]
+                        if glims_id not in active_glims_ids:
+                            self.logger.info(f"Enqueuing glacier {glims_id} (region={row['region']}, "
+                                             f"split={row['split']}, status={row['status']})")
+                            active_glims_ids.add(glims_id)
+                            future = executor.submit(self.process_one, glims_id)
+                            future.glims_id = glims_id
+                            futures.add(future)
+                            added_any = True
+                            if len(futures) >= self.cfg.num_workers:
+                                break
+                    
+                    if not added_any:
+                        break
 
-            # Checkpoint after EVERY glacier (the DB commits already made
-            # this durable; this just also flushes rolling statistics).
-            checkpoint_counter += 1
-            if checkpoint_counter % max(1, self.cfg.log_every_n_glaciers) == 0:
-                self.stats.log_snapshot(target)
+                if not futures:
+                    self.logger.warning(
+                        f"No more candidate glaciers available. Completed {completed}/{target}. "
+                        "Consider widening filters or increasing GLIMS coverage."
+                    )
+                    break
+
+                done, futures = concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
+                for f in done:
+                    active_glims_ids.remove(f.glims_id)
+                    try:
+                        f.result()
+                    except Exception as e:
+                        self.logger.error(f"Worker raised exception for {f.glims_id}: {e}")
+                        
+                    checkpoint_counter += 1
+                    if checkpoint_counter % max(1, self.cfg.log_every_n_glaciers) == 0:
+                        self.stats.log_snapshot(target)
 
         self.stats.log_snapshot(target)
         self.logger.info("Pipeline run finished.")
