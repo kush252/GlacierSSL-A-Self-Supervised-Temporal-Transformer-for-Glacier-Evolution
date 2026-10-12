@@ -2,7 +2,7 @@
 venv/
 env/
 .env
-
+assets/
 # Python Cache
 __pycache__/
 *.py[cod]
@@ -15,9 +15,11 @@ __pycache__/
 data/GLISM/
 dataset_tmp/
 new_pipeline_dataset/
+glacier_evolution_pipeline/
 logs/
 *.csv
-
+pipelines/evolution/output/
+pipelines/evolution/temp_dataset/
 # SQLite Databases
 *.sqlite3
 *.sqlite3-shm
@@ -26,3 +28,4 @@ logs/
 # OS generated files
 .DS_Store
 Thumbs.db
+*.zip

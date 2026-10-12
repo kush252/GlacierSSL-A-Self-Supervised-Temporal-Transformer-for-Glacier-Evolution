@@ -1,0 +1,32 @@
+# Glacier Evolution Annotation Pipeline - Thresholds Configuration
+
+temporal:
+  min_epochs: 4               # Rule 2.3-A: Minimum independent epochs
+  min_span_years: 8           # Rule 2.3-A: Minimum observation span in years
+  max_gap_years_high_conf: 5  # Rule 2.3-B: Max gap for high confidence
+  persistence_epochs: 2       # Rule 5.6-A, 7.4-A: Number of epochs required for persistent fragmentation/disappearance
+
+spatial:
+  mmu_km2: 0.02               # Rule 2.4-B: Minimum Mapping Unit in km2
+  
+  # Rule 2.4-A: Boundary uncertainty
+  pixel_width_clean_ice_m: 10
+  pixel_width_swir_m: 20
+  safety_factor: 2.0
+  
+  # Rule 2.4-C: Minimum detectable terminus retreat
+  min_terminus_disp_clean_m: 20
+  min_terminus_disp_debris_m: 100
+  
+  # Rule 5.5-B: Ice bridge
+  min_bridge_width_px: 2      # Minimum ice bridge width in pixels (typically 20m)
+  min_bridge_width_m: 20      # Minimum ice bridge width in meters
+
+statistics:
+  p_value_threshold: 0.05     # Rules 3.4-A, 4.4-A, 6.4-A: Statistical significance threshold
+
+classes:
+  debris_tiers:
+    clean: 0.1                # < 10%
+    partial: 0.5              # 10-50%
+    heavy: 0.9                # > 50%

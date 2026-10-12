@@ -1,0 +1,138 @@
+# Glacier SSL — default configuration.
+# Values tagged EXPERIMENT in src/DOCS_phase0/decision_ledger.md carry each file's
+# starting default here and must never be hardcoded in module logic.
+
+run:
+  seed: 42
+  device: cpu              # "cuda" if available; auto-detected at runtime if "auto"
+  output_root: src/artifacts/runs
+  log_level: INFO
+
+data:
+  sqlite_path: glacier_dataset.sqlite3
+  dataset_root: new_pipeline_dataset
+  band_order: [B02, B03, B04, B08, B11, B12]   # FIXED order (VIT §2)
+  scl_band: SCL
+  reflectance_scale: 10000.0                    # uint16 DN -> reflectance
+  split_source: db                              # splits come from DB region assignment
+  # SCL class IDs treated as INVALID (Sentinel-2 L2A scene classification):
+  # 0 no_data, 1 saturated, 3 cloud_shadow, 8 cloud_medium, 9 cloud_high,
+  # 10 thin_cirrus, 11 snow is KEPT valid (glaciers are snow/ice).
+  scl_invalid_classes: [0, 1, 3, 8, 9, 10]
+  min_valid_fraction: 0.2        # a timestamp/crop needs this valid-pixel fraction
+  strict_alignment: false        # true = require pixel-identical transforms across bands
+  alignment_tolerance_m: 30.0    # accepted extent drift between 10m and resampled-20m bands
+  manifest_path: src/artifacts/manifests/manifest.json
+  norm_stats_path: src/artifacts/normalization/train_stats.json
+  image_size: 512
+
+sampling:
+  window:
+    min_length: 2            # EXPERIMENT: min window T
+    max_length: 36           # EXPERIMENT: max window T
+    # relative frequency of drawing short / medium / long windows
+    length_bucket_freq: {short: 0.34, medium: 0.33, long: 0.33}
+    short_max: 6
+    medium_max: 16
+  global_scale: [0.4, 1.0]   # EXPERIMENT: crop scale range for global views
+  local_scale: [0.1, 0.4]    # EXPERIMENT: crop scale range for local views
+  global_crop_size: 512      # resized to ViT image size
+  local_crop_size: 512
+  augmentation:
+    hflip_prob: 0.5
+    vflip_prob: 0.5
+    rot90_prob: 0.5
+    radiometric:
+      brightness: 0.1        # multiplicative reflectance jitter range (+/-)
+      gaussian_noise_std: 0.01
+    enabled: true
+
+vit:
+  image_size: 512
+  patch_size: 16
+  in_chans: 6
+  embed_dim: 768
+  depth: 12
+  num_heads: 12
+  mlp_ratio: 4.0
+  dropout: 0.0               # EXPERIMENT
+  drop_path: 0.1             # EXPERIMENT
+  pretrained_ckpt: null      # EXPERIMENT
+
+hpe:
+  embed_dim: 768
+  input_grid: 32
+  num_merge_stages: 2        # FIXED (two stages -> 8x8)
+  dropout: 0.0               # EXPERIMENT
+
+tet:
+  embed_dim: 768
+  depth: 8
+  num_heads: 12
+  mlp_ratio: 4.0
+  mlp_dropout: 0.1           # EXPERIMENT
+  attn_dropout: 0.1          # EXPERIMENT
+  num_regions: 64
+  time_encoding: sinusoidal  # EXPERIMENT: sinusoidal | mlp | linear
+  span_encoding: sinusoidal  # same family as time_encoding
+  context_mode: broadcast_mean   # broadcast_mean | cross_attention  (resolved Phase 0)
+  relative_temporal_bias: false  # EXPERIMENT (off in baseline)
+
+head1:
+  hidden_dim: 2048
+  bottleneck_dim: 1024
+  num_prototypes: 8192       # EXPERIMENT (K)
+  student_temp: 0.1          # EXPERIMENT
+  teacher_temp: 0.04         # EXPERIMENT
+  center_momentum: 0.9
+  ema_momentum_start: 0.996  # EXPERIMENT
+  ema_momentum_end: 0.9999
+  num_global_teacher: 2
+  num_global_student: 2
+  num_local_student: 2
+  norm_last_layer: true
+
+head2:
+  mlp_hidden: [512, 128]
+  dropout: 0.1
+  l2_normalize: false        # EXPERIMENT
+  pair_sampling: gap_stratified   # EXPERIMENT: uniform | gap_stratified | weighted
+  gap_bins_years: [0.5, 1.0, 2.0, 4.0]   # EXPERIMENT (stratification edges)
+  pairs_per_glacier: 4
+  loss: smooth_l1            # EXPERIMENT: smooth_l1 | mae | mse (on log1p)
+
+head3:
+  encoder_hidden: [1536]     # EXPERIMENT (Change Encoder capacity)
+  encoder_out: 768
+  proj_dim: 256              # EXPERIMENT
+  proj_hidden: 512
+  dropout: 0.1
+  pair_features: five_group  # EXPERIMENT: five_group | signed | abs | start_end_signed
+  pooling: mean              # EXPERIMENT: mean | mean_max | attention
+  objective: infonce         # baseline; cluster is staged
+  temperature: 0.1           # EXPERIMENT
+  intervals_per_glacier: 4
+  max_gap_years: null        # EXPERIMENT (no cap)
+  cluster:
+    enabled: false           # EXPERIMENT (staged)
+    num_prototypes: 64       # EXPERIMENT K
+    weight: 0.5              # EXPERIMENT lambda_cluster
+    refresh_every: 1         # epochs between pseudo-label refresh
+  composition:
+    enabled: false           # EXPERIMENT (optional)
+
+loss:
+  lambda_dino: 1.0           # EXPERIMENT
+  lambda_distance: 0.5       # EXPERIMENT
+  lambda_change: 0.5         # EXPERIMENT
+
+train:
+  batch_size: 2
+  num_workers: 0
+  epochs: 1
+  lr: 0.0005
+  weight_decay: 0.04
+  grad_clip: 3.0
+  log_every: 10
+  ckpt_every: 1
+  amp: false
