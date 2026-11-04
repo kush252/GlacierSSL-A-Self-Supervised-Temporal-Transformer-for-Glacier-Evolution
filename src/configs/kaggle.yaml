@@ -2,13 +2,14 @@
 # Only the keys that differ from default.yaml are listed; everything else is inherited.
 #
 # MEMORY BUDGET — read before raising max_length or batch_size.
-# One training step runs the student backbone SEVEN times with gradients retained:
-#   1 base pass + 4 DINO student views + 2 Head-3 interval views.
-# Cost is therefore ~= 7 x batch_size x window_length timestep-encodings, each a full
-# 12-block / 1024-token ViT forward (~265 MB of stored activations in fp16).
-# A T4 has 16 GB, and GPU 0 additionally carries the AdamW state (~2.7 GB for 167M
-# params) because DataParallel keeps the master copy there. Start small, then raise
-# sampling.window.max_length until you see an OOM and step back one notch.
+# One training step runs the student backbone SEVEN times (1 base + 4 DINO student views
+# + 2 Head-3 interval views) and EVERY call's activations stay alive until backward, so
+# peak memory is their sum, not the largest one. Without gradient checkpointing each
+# timestep-encoding stores ~300 MB of ViT activations, which OOMs a 16 GB T4 even at
+# max_length 4. With checkpointing below it drops to ~20 MB, so the budget is:
+#     ~= 7 x batch_size x window_length x 20 MB, split across the visible GPUs.
+# GPU 0 additionally carries the AdamW state (~2.7 GB for 167M params) because
+# DataParallel keeps the master copy there, so GPU 0 is always the binding constraint.
 
 run:
   device: cuda
@@ -21,12 +22,18 @@ data:
   # The notebook rewrites this line with the real slug — see README "Kaggle flow".
   data_root: /kaggle/input/CHANGEME-dataset-slug
 
+vit:
+  grad_checkpoint: true      # REQUIRED on 16 GB. Identical math (verified bit-exact on
+                             # outputs and all gradients), ~6x less activation memory.
+tet:
+  grad_checkpoint: true
+
 sampling:
   window:
     min_length: 2
-    max_length: 4            # conservative start for 16 GB; raise toward 8-12 if it fits
-    short_max: 3
-    medium_max: 4
+    max_length: 8            # fits comfortably with checkpointing; try 12-16 next
+    short_max: 4
+    medium_max: 8
 
 train:
   batch_size: 2              # 1 per GPU under DataParallel; keep even so both T4s are fed

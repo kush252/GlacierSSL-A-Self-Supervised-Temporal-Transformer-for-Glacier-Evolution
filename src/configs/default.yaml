@@ -62,6 +62,8 @@ vit:
   dropout: 0.0               # EXPERIMENT
   drop_path: 0.1             # EXPERIMENT
   pretrained_ckpt: null      # EXPERIMENT
+  grad_checkpoint: false     # recompute block activations in backward (identical math,
+                             # ~6x less activation memory, ~30% slower). Needed on 16GB GPUs.
 
 hpe:
   embed_dim: 768
@@ -81,6 +83,7 @@ tet:
   span_encoding: sinusoidal  # same family as time_encoding
   context_mode: broadcast_mean   # broadcast_mean | cross_attention  (resolved Phase 0)
   relative_temporal_bias: false  # EXPERIMENT (off in baseline)
+  grad_checkpoint: false         # see vit.grad_checkpoint
 
 head1:
   hidden_dim: 2048

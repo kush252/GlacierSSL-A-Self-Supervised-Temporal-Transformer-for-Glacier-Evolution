@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
+from torch.utils.checkpoint import checkpoint
 
 from ..config import Config
 from .layers import Attention, Mlp
@@ -151,6 +152,7 @@ class TemporalEvolutionTransformer(nn.Module):
         self.blocks = nn.ModuleList([TETBlock(config) for _ in range(self.depth)])
         self.norm = nn.LayerNorm(self.dim)
         self.context_norm = nn.LayerNorm(self.dim)
+        self.grad_checkpoint = bool(config.get("tet.grad_checkpoint", False))
         nn.init.trunc_normal_(self.season_embed.weight, std=0.02)
 
     def add_temporal_embeddings(self, regional, season_ids, elapsed_years):
@@ -176,8 +178,12 @@ class TemporalEvolutionTransformer(nn.Module):
 
         context = self.sequence_token.expand(B, D) + self.span_encoding(span_years)
 
+        ckpt = self.grad_checkpoint and self.training and torch.is_grad_enabled()
         for blk in self.blocks:
-            x, context = blk(x, context, tmask)
+            if ckpt:
+                x, context = checkpoint(blk, x, context, tmask, use_reentrant=False)
+            else:
+                x, context = blk(x, context, tmask)
 
         regional_out = self.norm(x)                                  # (B,T,64,768)
         sequence_out = self.context_norm(context)                    # (B,768)

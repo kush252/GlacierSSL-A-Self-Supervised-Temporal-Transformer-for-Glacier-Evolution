@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
+from torch.utils.checkpoint import checkpoint
 
 from ..config import Config
 from ..utils.logging_utils import get_logger
@@ -44,6 +45,11 @@ class MultispectralViT(nn.Module):
             for i in range(self.depth)
         ])
         self.norm = nn.LayerNorm(self.embed_dim)
+        # Recompute block activations during backward instead of storing them. One training
+        # step runs this backbone seven times (base + 4 DINO views + 2 Head-3 views) and
+        # every call's activations stay alive until backward, so stored activations — not
+        # parameters — are what exhausts a 16 GB GPU. Identical math, ~30% more compute.
+        self.grad_checkpoint = bool(config.get("vit.grad_checkpoint", False))
         self.apply(self._init_weights)
 
     @staticmethod
@@ -65,8 +71,12 @@ class MultispectralViT(nn.Module):
         x = self.patch_embed(x)                      # (B, dim, grid, grid)
         x = x.flatten(2).transpose(1, 2)             # (B, num_patches, dim)
         x = x + self.pos_embed
+        ckpt = self.grad_checkpoint and self.training and torch.is_grad_enabled()
         for blk in self.blocks:
-            x = blk(x)                               # no mask: spatial tokens all valid
+            if ckpt:
+                x = checkpoint(blk, x, use_reentrant=False)
+            else:
+                x = blk(x)                           # no mask: spatial tokens all valid
         x = self.norm(x)
         return x                                     # (B, 1024, 768)
 

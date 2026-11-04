@@ -179,14 +179,22 @@ Smoke-test with `--limit-glaciers 20 --epochs 1` before the real run.
 
 **4. Memory tuning — the part that actually bites.** One step runs the student backbone
 **seven times with gradients retained** (1 base + 4 DINO student views + 2 Head-3 interval
-views), so cost scales as `7 × batch_size × window_length` full ViT forwards. GPU 0 also
-carries the AdamW state (~2.7 GB for 167M params) because DataParallel keeps the master copy
-there, so GPU 0 is always the binding constraint. `kaggle.yaml` therefore starts at
-`max_length: 4`, `batch_size: 2` — raise `sampling.window.max_length` toward 8–12 until you
-OOM, then step back one notch. Keep `batch_size` even so both T4s are fed.
+views), and every call's activations stay alive until backward, so peak memory is their
+**sum**, not the largest one. Cost scales as `7 × batch_size × window_length`
+timestep-encodings. GPU 0 additionally carries the AdamW state (~2.7 GB for 167M params)
+because DataParallel keeps the master copy there, so GPU 0 is the binding constraint.
 
-Attention uses PyTorch's fused SDPA kernel, which never materializes the
-(heads, 1024, 1024) score matrix — without it the 1024-token ViT cannot fit in 16 GB at all.
+Two optimizations make this fit in 16 GB, both verified to change memory and nothing else:
+
+| Optimization | Effect |
+|---|---|
+| Fused SDPA attention (always on) | never materializes the (heads, 1024, 1024) score matrix; identical to ~1e-15 on values and gradients |
+| `vit.grad_checkpoint` / `tet.grad_checkpoint` | recompute block activations in backward: ~300 MB → ~20 MB per timestep-encoding, ~30% slower, **bit-identical** outputs and gradients |
+
+Without checkpointing a T4 OOMs even at `max_length: 4`. With it enabled (as `kaggle.yaml`
+does), `max_length: 8` fits comfortably — raise toward 12–16 until you OOM, then step back
+one notch. Keep `batch_size` even so both T4s are fed. Audit section M re-proves the
+bit-exactness on every run.
 
 **5. Persist checkpoints — `/kaggle/working` is wiped when the session ends.** `output_root`
 is `/kaggle/working/runs`, which is ephemeral. Before the session dies, push the run to a

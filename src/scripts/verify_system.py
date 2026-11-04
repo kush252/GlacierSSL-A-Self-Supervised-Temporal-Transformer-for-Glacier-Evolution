@@ -352,6 +352,49 @@ def audit_wiring(device, tmp: Path) -> None:
 
 
 # ----------------------------------------------------------------------------------
+# M. gradient checkpointing
+# ----------------------------------------------------------------------------------
+def audit_grad_checkpoint(device) -> None:
+    section("M. Gradient checkpointing — memory trade must not change the math")
+
+    def run(flag: bool):
+        torch.manual_seed(0)
+        cfg = small_config(vit={"grad_checkpoint": flag}, tet={"grad_checkpoint": flag})
+        bb = GlacierBackbone(cfg).to(device).train()
+        torch.manual_seed(7)
+        B, T, o = 2, 3, int(cfg.data.image_size)
+        imgs = torch.randn(B, T, 6, o, o, device=device)
+        m = torch.ones(B, T, dtype=torch.bool, device=device)
+        m[1, 2] = False                                   # keep a padded step in play
+        e = torch.rand(B, T, device=device)
+        sp = torch.rand(B, device=device)
+        sids = seasons_to_ids([["DJF", "MAM", "JJA"]] * B, T, device)
+        out = bb(imgs, m, e, sp, sids)
+        loss = (out["regional_out"].square().mean()
+                + out["timestamp_out"].square().mean()
+                + out["sequence_out"].square().mean())
+        loss.backward()
+        grads = {n: p.grad.detach().clone() for n, p in bb.named_parameters()
+                 if p.grad is not None}
+        return out, grads, bb.vit.grad_checkpoint and bb.tet.grad_checkpoint
+
+    off_out, off_g, off_flag = run(False)
+    on_out, on_g, on_flag = run(True)
+
+    check("grad_checkpoint flag reaches both ViT and TET",
+          off_flag is False and on_flag is True)
+    worst_out = max(float((off_out[k] - on_out[k]).abs().max())
+                    for k in ("regional_out", "timestamp_out", "sequence_out"))
+    check("checkpointed forward outputs match exactly", worst_out < 1e-6,
+          f"max|diff|={worst_out:.2e}")
+    check("checkpointed and non-checkpointed gradients cover the same params",
+          set(off_g) == set(on_g), f"{len(off_g)} tensors")
+    worst_g = max(float((off_g[n] - on_g[n]).abs().max()) for n in off_g)
+    check("checkpointed gradients match exactly", worst_g < 1e-6,
+          f"max|diff|={worst_g:.2e} over {len(off_g)} tensors")
+
+
+# ----------------------------------------------------------------------------------
 # L. mixed precision
 # ----------------------------------------------------------------------------------
 def audit_amp(device, tmp: Path) -> None:
@@ -538,6 +581,7 @@ def main() -> int:
     audit_tensor_contract(cfg, device)
     audit_masking(cfg, device)
     audit_information_barriers(cfg, device)
+    audit_grad_checkpoint(device)
     with tempfile.TemporaryDirectory() as tmp:
         audit_wiring(device, Path(tmp))
         audit_amp(device, Path(tmp))
