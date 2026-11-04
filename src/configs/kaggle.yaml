@@ -37,6 +37,10 @@ sampling:
 
 train:
   batch_size: 2              # 1 per GPU under DataParallel; keep even so both T4s are fed
+  # Reduced from the 5e-4 baseline. Both collapsed runs showed the raw gradient norm
+  # repeatedly exceeding grad_clip 3.0, and only 2 independent glaciers per step is a
+  # very small batch for DINO. Revert to 5e-4 to isolate the warmup/freeze fix.
+  lr: 0.0002
   num_workers: 2             # Kaggle gives 4 vCPUs; 2 loaders + main process
   epochs: 20
   amp: true

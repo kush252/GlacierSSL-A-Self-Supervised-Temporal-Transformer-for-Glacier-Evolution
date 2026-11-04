@@ -23,7 +23,11 @@ def small_config(**extra):
         "tet": {"embed_dim": 64, "depth": 2, "num_heads": 4, "num_regions": 4,
                 "mlp_dropout": 0.0, "attn_dropout": 0.0},
         "sampling": {"global_crop_size": 128, "local_crop_size": 128},
-        "head1": {"hidden_dim": 128, "bottleneck_dim": 64, "num_prototypes": 256},
+        # Warmup/freeze are exercised by dedicated tests; off here so the other tests
+        # measure the step itself rather than a warmup-scaled fraction of it.
+        "train": {"warmup_steps": 0},
+        "head1": {"hidden_dim": 128, "bottleneck_dim": 64, "num_prototypes": 256,
+                  "freeze_last_layer_steps": 0},
         "head2": {"mlp_hidden": [64, 32]},
         "head3": {"encoder_hidden": [128], "encoder_out": 64, "proj_dim": 32,
                   "proj_hidden": 64},

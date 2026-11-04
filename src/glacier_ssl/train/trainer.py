@@ -90,6 +90,10 @@ class SSLTrainer:
         self.optimizer = torch.optim.AdamW(
             params, lr=float(config.train.lr), weight_decay=float(config.train.weight_decay))
         self.grad_clip = float(config.train.grad_clip)
+        self.base_lr = float(config.train.lr)
+        self.warmup_steps = int(config.get("train.warmup_steps", 0))
+        self.freeze_last_layer_steps = int(
+            config.get("head1.freeze_last_layer_steps", 0))
         self.lambda_dino = float(config.loss.lambda_dino)
         self.lambda_distance = float(config.loss.lambda_distance)
         self.lambda_change = float(config.loss.lambda_change)
@@ -200,6 +204,7 @@ class SSLTrainer:
     def train_step(self, batch, step, total_steps):
         self.student.train(); self.head1.train(); self.head2.train(); self.head3.train()
         self.optimizer.zero_grad(set_to_none=True)
+        lr = self._apply_warmup(step)
 
         elapsed = batch["elapsed_years"].to(self.device)
         span = batch["span_years"].to(self.device)
@@ -221,6 +226,7 @@ class SSLTrainer:
 
         self.scaler.scale(total).backward()
         self.scaler.unscale_(self.optimizer)
+        self._freeze_prototypes(step)
         all_params = [p for g in self.optimizer.param_groups for p in g["params"]]
         torch.nn.utils.clip_grad_norm_(all_params, self.grad_clip)
         bb_grad_norm = self._backbone_grad_norm()
@@ -234,10 +240,26 @@ class SSLTrainer:
         logs.update({
             "loss_total": float(total.detach()), "loss_dino": float(l_dino.detach()),
             "loss_distance": float(l_dist.detach()), "loss_change": float(l_change.detach()),
-            "backbone_grad_norm": bb_grad_norm, "ema_momentum": momentum,
+            "backbone_grad_norm": bb_grad_norm, "ema_momentum": momentum, "lr": lr,
         })
         self.metrics.log(step, **logs)
         return logs
+
+    def _apply_warmup(self, step: int) -> float:
+        if self.warmup_steps <= 0:
+            return self.base_lr
+        lr = self.base_lr * min(1.0, (step + 1) / self.warmup_steps)
+        for group in self.optimizer.param_groups:
+            group["lr"] = lr
+        return lr
+
+    def _freeze_prototypes(self, step: int) -> None:
+        """Reference DINO cancels last-layer grads early; uniform prototype output is a
+        zero-gradient fixed point, so the layer must not race ahead of the backbone."""
+        if step >= self.freeze_last_layer_steps:
+            return
+        for p in self.head1.student_head.last_layer.parameters():
+            p.grad = None
 
     def _check_collapse(self, dino_loss: float) -> None:
         if dino_loss < self._dino_chance - 0.01:
