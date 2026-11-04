@@ -49,3 +49,9 @@ train:
   # ckpt_latest.pt (still written every epoch) and no numbered milestones. Raise to 5 if
   # you want periodic snapshots AND are pushing them off to a Dataset as you go.
   ckpt_every: 0
+
+loss:
+  # lambda_distance=0.5 (default) gives Head 2 ~850x less backbone gradient than DINO
+  # (0.5 x 0.02 dist_loss vs 1.0 x 8.5 dino_loss). Raise to 20 so Head 2 shapes the
+  # backbone at ~5% of DINO's weight — meaningful without destabilising training.
+  lambda_distance: 20
