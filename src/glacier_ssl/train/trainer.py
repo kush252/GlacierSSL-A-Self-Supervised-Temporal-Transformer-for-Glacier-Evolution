@@ -94,6 +94,11 @@ class SSLTrainer:
         self.lambda_distance = float(config.loss.lambda_distance)
         self.lambda_change = float(config.loss.lambda_change)
         self.n_global = int(config.head1.num_global_teacher)
+        # Uniform output over K prototypes gives a DINO loss of exactly log(K). A loss
+        # pinned there means the backbone emits a constant embedding regardless of input
+        # (representational collapse); training never recovers on its own.
+        self._dino_chance = math.log(int(config.head1.num_prototypes))
+        self._collapse_strikes = 0
 
     # -- EMA ---------------------------------------------------------------------
     @torch.no_grad()
@@ -234,6 +239,18 @@ class SSLTrainer:
         self.metrics.log(step, **logs)
         return logs
 
+    def _check_collapse(self, dino_loss: float) -> None:
+        if dino_loss < self._dino_chance - 0.01:
+            self._collapse_strikes = 0
+            return
+        self._collapse_strikes += 1
+        if self._collapse_strikes == 3 or self._collapse_strikes % 20 == 0:
+            self.log.warning(
+                "COLLAPSE: dino %.4f is at chance log(K)=%.4f for %d consecutive logs. "
+                "The backbone is emitting a constant embedding. Stop and resume from a "
+                "pre-collapse checkpoint; continuing will not recover.",
+                dino_loss, self._dino_chance, self._collapse_strikes)
+
     @torch.no_grad()
     def _backbone_grad_norm(self) -> float:
         grads = [p.grad.detach().norm() for p in self.student.parameters()
@@ -262,6 +279,7 @@ class SSLTrainer:
                         logs["loss_distance"], logs["loss_change"],
                         logs["backbone_grad_norm"], logs.get("n_pairs", 0),
                         logs.get("n_intervals", 0))
+                    self._check_collapse(logs["loss_dino"])
                 step += 1
             # A checkpoint is ~3 GB (student + teacher + heads + AdamW moments), so one
             # per epoch would exceed a 20 GB working disk well before 20 epochs. Always
