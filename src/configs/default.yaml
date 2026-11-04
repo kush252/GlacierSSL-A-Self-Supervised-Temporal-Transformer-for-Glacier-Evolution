@@ -98,6 +98,12 @@ head1:
   num_global_student: 2
   num_local_student: 2
   norm_last_layer: true
+  # Prototype-layer gradients are cancelled for this many steps at the start of
+  # training (reference DINO's freeze_last_layer, counted in steps rather than
+  # epochs). Without it the prototypes can reach a degenerate configuration before
+  # the backbone learns anything, and uniform output is a ZERO-gradient fixed point
+  # that training can never leave. 336 == one epoch at the Kaggle steps/epoch.
+  freeze_last_layer_steps: 336
 
 head2:
   mlp_hidden: [512, 128]
@@ -140,6 +146,9 @@ train:
   lr: 0.0005
   weight_decay: 0.04
   grad_clip: 3.0
+  # Linear LR warmup. DINO is collapse-prone at full LR from step 0, especially at
+  # small batch; 0 disables warmup.
+  warmup_steps: 500
   log_every: 10
   ckpt_every: 1
   # --- GPU acceleration ---

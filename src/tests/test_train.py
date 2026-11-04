@@ -113,3 +113,32 @@ def test_teacher_is_ema_only(tmp_path):
     trainer.train_step(_synthetic_batch(cfg), step=0, total_steps=4)
     t1 = next(trainer.teacher.vit.parameters())
     assert not torch.allclose(t0, t1)               # teacher moved, but only via EMA
+
+
+def test_lr_warmup_ramps_and_saturates(tmp_path):
+    cfg = small_config(train={"warmup_steps": 10})
+    trainer = SSLTrainer(cfg, output_dir=tmp_path, device="cpu")
+    base = float(cfg.train.lr)
+    assert trainer._apply_warmup(0) == base * 0.1
+    assert trainer._apply_warmup(4) == base * 0.5
+    assert trainer._apply_warmup(9) == base
+    assert trainer._apply_warmup(500) == base          # clamped, never exceeds base
+    assert trainer.optimizer.param_groups[0]["lr"] == base
+
+
+def test_frozen_prototypes_do_not_move_then_resume(tmp_path):
+    """Uniform prototype output is a zero-gradient fixed point, so the layer is held
+    still early while the backbone learns something to assign."""
+    cfg = small_config(head1={"freeze_last_layer_steps": 2})
+    trainer = SSLTrainer(cfg, output_dir=tmp_path, device="cpu")
+    proto = trainer.head1.student_head.last_layer.weight_v
+    backbone = next(trainer.student.vit.parameters())
+
+    before_p, before_b = proto.clone(), backbone.clone()
+    trainer.train_step(_synthetic_batch(cfg), step=0, total_steps=8)
+    assert torch.allclose(before_p, proto), "prototypes must be frozen at step 0"
+    assert not torch.allclose(before_b, backbone), "backbone must still train"
+
+    before_p = proto.clone()
+    trainer.train_step(_synthetic_batch(cfg), step=2, total_steps=8)
+    assert not torch.allclose(before_p, proto), "prototypes must train once unfrozen"
