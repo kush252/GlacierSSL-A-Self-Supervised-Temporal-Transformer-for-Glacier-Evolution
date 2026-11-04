@@ -22,6 +22,7 @@ from glacier_ssl.data.manifest import load_manifest, split_glaciers
 from glacier_ssl.data.normalization import load_norm_stats
 from glacier_ssl.data.preprocessing import Preprocessor
 from glacier_ssl.data.sampling import WindowSampler
+from glacier_ssl.train.checkpoint import load_checkpoint
 from glacier_ssl.train.trainer import SSLTrainer
 from glacier_ssl.utils.logging_utils import get_logger
 from glacier_ssl.utils.run_metadata import write_run_metadata
@@ -51,6 +52,8 @@ def main() -> None:
     ap.add_argument("--epochs", type=int, default=None)
     ap.add_argument("--limit-glaciers", type=int, default=None)
     ap.add_argument("--device", default="auto")
+    ap.add_argument("--resume", default=None,
+                    help="path to a ckpt_latest.pt to continue from (session caps)")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
@@ -78,7 +81,21 @@ def main() -> None:
     log.info("Train glaciers: %d | steps/epoch=%d", n, len(loader))
 
     trainer = SSLTrainer(cfg, output_dir=run_dir, device=args.device)
-    trainer.fit(loader, epochs=int(cfg.train.epochs))
+
+    start_epoch = start_step = 0
+    if args.resume:
+        heads = {"head1": trainer.head1, "head2": trainer.head2, "head3": trainer.head3}
+        start_step = load_checkpoint(args.resume, trainer.student, trainer.teacher,
+                                     heads, trainer.optimizer,
+                                     map_location=trainer.device)
+        # steps advance once per batch, so the completed-epoch count follows from the
+        # loader length rather than needing its own field in the payload.
+        start_epoch = start_step // max(1, len(loader))
+        log.info("Resumed from %s at step %d -> starting epoch %d/%d",
+                 args.resume, start_step, start_epoch, int(cfg.train.epochs))
+
+    trainer.fit(loader, epochs=int(cfg.train.epochs),
+                start_epoch=start_epoch, start_step=start_step)
     log.info("Training complete.")
 
 

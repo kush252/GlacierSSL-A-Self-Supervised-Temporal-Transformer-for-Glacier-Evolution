@@ -45,4 +45,7 @@ train:
   pin_memory: auto
   tf32: true                 # no effect on T4, harmless
   log_every: 5
-  ckpt_every: 1
+  # Each checkpoint is ~3 GB and /kaggle/working caps at 20 GB. 0 = keep only the rolling
+  # ckpt_latest.pt (still written every epoch) and no numbered milestones. Raise to 5 if
+  # you want periodic snapshots AND are pushing them off to a Dataset as you go.
+  ckpt_every: 0

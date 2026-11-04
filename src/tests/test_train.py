@@ -56,6 +56,54 @@ def test_combined_step_finite_and_backbone_grads(tmp_path):
     assert not torch.allclose(p0, p1)               # backbone params updated
 
 
+def test_resume_restores_state_and_continues(tmp_path):
+    """A 12h session cap means long runs MUST resume exactly where they stopped."""
+    from glacier_ssl.train.checkpoint import load_checkpoint
+
+    cfg = small_config()
+    cfg.set("train.ckpt_every", 0)
+    batches = [_synthetic_batch(cfg) for _ in range(2)]
+
+    t1 = SSLTrainer(cfg, output_dir=tmp_path, device="cpu")
+    steps = t1.fit(batches, epochs=2)
+    assert steps == 4                                   # 2 epochs x 2 batches
+
+    ckpt = tmp_path / "ckpt_latest.pt"
+    assert ckpt.exists(), "rolling checkpoint must be written every epoch"
+    assert not (tmp_path / "ckpt_epoch0.pt").exists(), "ckpt_every=0 -> no milestones"
+
+    # a fresh trainer starts different, then matches exactly after loading
+    t2 = SSLTrainer(cfg, output_dir=tmp_path, device="cpu")
+    p1 = next(t1.student.vit.parameters()).detach()
+    assert not torch.allclose(p1, next(t2.student.vit.parameters()).detach())
+
+    heads = {"head1": t2.head1, "head2": t2.head2, "head3": t2.head3}
+    step = load_checkpoint(ckpt, t2.student, t2.teacher, heads, t2.optimizer)
+    assert step == 4
+    for a, b in zip(t1.student.parameters(), t2.student.parameters()):
+        assert torch.allclose(a.detach(), b.detach())
+    for a, b in zip(t1.teacher.parameters(), t2.teacher.parameters()):
+        assert torch.allclose(a.detach(), b.detach())
+
+    # resuming continues the step counter instead of restarting at 0
+    total = t2.fit(batches, epochs=4, start_epoch=step // len(batches), start_step=step)
+    assert total == 8
+
+
+def test_ckpt_every_writes_milestones(tmp_path):
+    cfg = small_config()
+    cfg.set("train.ckpt_every", 2)
+    batches = [_synthetic_batch(cfg)]
+    trainer = SSLTrainer(cfg, output_dir=tmp_path, device="cpu")
+    trainer.fit(batches, epochs=4)
+    assert (tmp_path / "ckpt_latest.pt").exists()
+    # milestones at the end of epochs 1 and 3 only
+    assert (tmp_path / "ckpt_epoch1.pt").exists()
+    assert (tmp_path / "ckpt_epoch3.pt").exists()
+    assert not (tmp_path / "ckpt_epoch0.pt").exists()
+    assert not (tmp_path / "ckpt_epoch2.pt").exists()
+
+
 def test_teacher_is_ema_only(tmp_path):
     cfg = small_config()
     trainer = SSLTrainer(cfg, output_dir=tmp_path, device="cpu")

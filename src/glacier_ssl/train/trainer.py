@@ -243,12 +243,15 @@ class SSLTrainer:
         return float(torch.norm(torch.stack(grads)))
 
     # -- epoch loop --------------------------------------------------------------
-    def fit(self, loader, epochs: int):
+    def fit(self, loader, epochs: int, start_epoch: int = 0, start_step: int = 0):
+        """``epochs`` is always the TOTAL target, so the EMA/momentum schedule stays on
+        the same curve when a run is resumed partway through."""
         total_steps = max(1, epochs * len(loader))
-        step = 0
-        for epoch in range(epochs):
-            if hasattr(loader.dataset, "set_epoch"):
-                loader.dataset.set_epoch(epoch)
+        step = start_step
+        for epoch in range(start_epoch, epochs):
+            dataset = getattr(loader, "dataset", None)   # plain iterables are fine too
+            if hasattr(dataset, "set_epoch"):
+                dataset.set_epoch(epoch)
             for batch in loader:
                 logs = self.train_step(batch, step, total_steps)
                 if step % int(self.cfg.train.log_every) == 0:
@@ -260,9 +263,18 @@ class SSLTrainer:
                         logs["backbone_grad_norm"], logs.get("n_pairs", 0),
                         logs.get("n_intervals", 0))
                 step += 1
-            save_checkpoint(self.out / f"ckpt_epoch{epoch}.pt", step, self.student,
-                            self.teacher, {"head1": self.head1, "head2": self.head2,
-                                           "head3": self.head3},
-                            self.optimizer, self.cfg)
+            # A checkpoint is ~3 GB (student + teacher + heads + AdamW moments), so one
+            # per epoch would exceed a 20 GB working disk well before 20 epochs. Always
+            # refresh a single rolling `ckpt_latest.pt` for resumption, and keep numbered
+            # milestones only every `ckpt_every` epochs (0 = latest only).
+            heads = {"head1": self.head1, "head2": self.head2, "head3": self.head3}
+            save_checkpoint(self.out / "ckpt_latest.pt", step, self.student, self.teacher,
+                            heads, self.optimizer, self.cfg, extra={"epoch": epoch})
+            every = int(self.cfg.get("train.ckpt_every", 0))
+            if every > 0 and (epoch + 1) % every == 0:
+                save_checkpoint(self.out / f"ckpt_epoch{epoch}.pt", step, self.student,
+                                self.teacher, heads, self.optimizer, self.cfg,
+                                extra={"epoch": epoch})
+            self.log.info("epoch %d done (step %d) -> ckpt_latest.pt", epoch, step)
         self.metrics.close()
         return step
