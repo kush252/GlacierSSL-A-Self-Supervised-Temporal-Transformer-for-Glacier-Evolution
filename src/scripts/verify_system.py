@@ -214,7 +214,8 @@ def audit_tensor_contract(cfg, device) -> None:
 
     # heads consume exactly those contracts
     h2 = Head2Distance(cfg).to(device)
-    pred = h2(out["timestamp_out"][:, 0], out["timestamp_out"][:, 1])
+    with torch.no_grad():
+        pred = h2(out["timestamp_out"][:, 0], out["timestamp_out"][:, 1])
     check("Head2(u_i,u_j) -> (B,) non-negative scalar per pair",
           pred.shape == (B,) and bool((pred >= 0).all()),
           f"shape={tuple(pred.shape)} min={float(pred.min()):.4f}")
@@ -232,8 +233,14 @@ def audit_tensor_contract(cfg, device) -> None:
 # ----------------------------------------------------------------------------------
 # C/D/E/F. gradient + optimizer coverage, param motion, teacher isolation
 # ----------------------------------------------------------------------------------
-def audit_wiring(cfg, device, tmp: Path) -> None:
+def audit_wiring(device, tmp: Path) -> None:
     section("C. Gradient coverage — every trainable parameter must receive gradient")
+    # Graph connectivity is measured in fp32 ON PURPOSE. With AMP on, GradScaler starts at
+    # scale 65536 and the first steps routinely overflow fp16 (max 65504): grads come back
+    # inf, scaler.step() SKIPS the update by design, and the scale is halved until it fits.
+    # Auditing "did every param get a finite gradient and move" during that calibration
+    # would measure the scaler's warm-up, not the wiring. AMP gets its own section below.
+    cfg = small_config(train={"amp": False})
     torch.manual_seed(0)
     trainer = SSLTrainer(cfg, output_dir=tmp, device=device)
     batch = synthetic_batch(cfg, device)
@@ -329,11 +336,6 @@ def audit_wiring(cfg, device, tmp: Path) -> None:
           and logs.get("n_dino_valid", 0) > 0,
           f"pairs={logs.get('n_pairs')} intervals={logs.get('n_intervals')} "
           f"dino_valid={logs.get('n_dino_valid')}")
-    check("AMP/GradScaler plumbing consistent with device",
-          (trainer.amp_enabled is False) if device.type == "cpu" else True,
-          f"device={device.type} amp={trainer.amp_enabled} dtype={trainer.amp_dtype} "
-          f"data_parallel={trainer.dp}")
-
     # overfit trend on ONE fixed batch: the supervised heads must be able to descend
     fixed = synthetic_batch(cfg, device)
     torch.manual_seed(1)
@@ -347,6 +349,52 @@ def audit_wiring(cfg, device, tmp: Path) -> None:
     check("Head3 (change) loss descends on a fixed batch",
           last["loss_change"] < first["loss_change"],
           f"{first['loss_change']:.4f} -> {last['loss_change']:.4f}")
+
+
+# ----------------------------------------------------------------------------------
+# L. mixed precision
+# ----------------------------------------------------------------------------------
+def audit_amp(device, tmp: Path) -> None:
+    section("L. Mixed precision — GradScaler must calibrate, then train")
+    cfg = small_config(train={"amp": True})
+    torch.manual_seed(0)
+    trainer = SSLTrainer(cfg, output_dir=tmp, device=device)
+
+    if device.type != "cuda":
+        check("AMP correctly disabled on CPU (no-op path)",
+              trainer.amp_enabled is False and trainer.dp is False,
+              f"amp={trainer.amp_enabled} data_parallel={trainer.dp}")
+        return
+
+    check("AMP enabled on CUDA", trainer.amp_enabled is True,
+          f"dtype={trainer.amp_dtype} data_parallel={trainer.dp}")
+
+    start = {n: p.detach().clone() for n, p in trainer.student.named_parameters()}
+    t_start = next(trainer.teacher.vit.parameters()).detach().clone()
+    scales, applied = [], 0
+    for s in range(12):
+        before = trainer.scaler.get_scale()
+        lg = trainer.train_step(synthetic_batch(cfg, device), step=s, total_steps=12)
+        after = trainer.scaler.get_scale()
+        scales.append(after)
+        # scaler.step() applies the update unless it found inf/nan (then it lowers scale)
+        if after >= before:
+            applied += 1
+        if not torch.isfinite(torch.tensor(lg["loss_total"])):
+            break
+
+    check("GradScaler settled to a usable scale (overflow steps are expected early)",
+          applied > 0, f"{applied}/12 steps applied | scale {scales[0]:.0f} -> {scales[-1]:.0f}")
+    moved = sum(1 for n, p in trainer.student.named_parameters()
+                if not torch.allclose(start[n], p.detach(), atol=0, rtol=0))
+    total = len(start)
+    check("student params moved once the scaler settled",
+          moved > 0, f"{moved}/{total} params changed over 12 AMP steps")
+    t_end = next(trainer.teacher.vit.parameters()).detach()
+    check("teacher followed via EMA under AMP",
+          not torch.allclose(t_start, t_end))
+    finite = all(torch.isfinite(p).all() for p in trainer.student.parameters())
+    check("no NaN/Inf leaked into student weights under fp16", finite)
 
 
 # ----------------------------------------------------------------------------------
@@ -491,7 +539,8 @@ def main() -> int:
     audit_masking(cfg, device)
     audit_information_barriers(cfg, device)
     with tempfile.TemporaryDirectory() as tmp:
-        audit_wiring(cfg, device, Path(tmp))
+        audit_wiring(device, Path(tmp))
+        audit_amp(device, Path(tmp))
 
     if args.full_config:
         section("K. Production backbone instantiation (768-dim, 12+8 blocks)")
