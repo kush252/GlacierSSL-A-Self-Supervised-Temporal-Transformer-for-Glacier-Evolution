@@ -46,10 +46,15 @@ class GlacierBackbone(nn.Module):
         timestamp_mask: (B,T) bool, True=valid (real) timestamp
         elapsed_years:  (B,T) float from dates
         span_years:     (B,) float
-        seasons:        list[list[str]] length B
+        seasons:        season ids tensor (B,T) long  OR  list[list[str]] length B.
+                        A tensor is required under nn.DataParallel so it scatters per-GPU
+                        in lock-step with imgs; the list form is kept for direct callers.
         """
         regional = self.encode_regional(imgs)                     # (B,T,64,768)
-        season_ids = seasons_to_ids(seasons, imgs.shape[1], imgs.device)
+        if torch.is_tensor(seasons):
+            season_ids = seasons.to(imgs.device)
+        else:
+            season_ids = seasons_to_ids(seasons, imgs.shape[1], imgs.device)
         return self.tet(regional, season_ids, elapsed_years, span_years,
                         timestamp_mask, region_mask=region_mask)
 

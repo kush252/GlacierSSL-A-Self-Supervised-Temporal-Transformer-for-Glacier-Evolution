@@ -1,0 +1,41 @@
+# Kaggle override config (2x Tesla T4). Pass with:  --config src/configs/kaggle.yaml
+# Only the keys that differ from default.yaml are listed; everything else is inherited.
+#
+# MEMORY BUDGET — read before raising max_length or batch_size.
+# One training step runs the student backbone SEVEN times with gradients retained:
+#   1 base pass + 4 DINO student views + 2 Head-3 interval views.
+# Cost is therefore ~= 7 x batch_size x window_length timestep-encodings, each a full
+# 12-block / 1024-token ViT forward (~265 MB of stored activations in fp16).
+# A T4 has 16 GB, and GPU 0 additionally carries the AdamW state (~2.7 GB for 167M
+# params) because DataParallel keeps the master copy there. Start small, then raise
+# sampling.window.max_length until you see an OOM and step back one notch.
+
+run:
+  device: cuda
+  output_root: /kaggle/working/runs    # /kaggle/input is READ-ONLY; must write here
+
+data:
+  # Base directory the manifest's relative band paths resolve against. The uploaded zip
+  # expands to <slug>/new_pipeline_dataset/..., and the manifest paths already start with
+  # "new_pipeline_dataset/", so this points at the dataset ROOT, not at the inner folder.
+  # The notebook rewrites this line with the real slug — see README "Kaggle flow".
+  data_root: /kaggle/input/CHANGEME-dataset-slug
+
+sampling:
+  window:
+    min_length: 2
+    max_length: 4            # conservative start for 16 GB; raise toward 8-12 if it fits
+    short_max: 3
+    medium_max: 4
+
+train:
+  batch_size: 2              # 1 per GPU under DataParallel; keep even so both T4s are fed
+  num_workers: 2             # Kaggle gives 4 vCPUs; 2 loaders + main process
+  epochs: 20
+  amp: true
+  amp_dtype: float16         # T4 is Turing -> fp16 (bfloat16 needs Ampere+)
+  data_parallel: auto        # -> True when 2 GPUs are visible
+  pin_memory: auto
+  tf32: true                 # no effect on T4, harmless
+  log_every: 5
+  ckpt_every: 1

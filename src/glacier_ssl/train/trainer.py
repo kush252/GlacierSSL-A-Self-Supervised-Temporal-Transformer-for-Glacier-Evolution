@@ -11,6 +11,11 @@ L_total = λ_dino·L_DINO + λ_distance·L_distance + λ_change·L_change (coeff
 Each loss, gradient norm to the backbone, and valid-sample counts are logged separately
 (a coefficient is not influence). Teacher = EMA only; all student paths backprop into the
 shared ViT+HPE+TET.
+
+GPU acceleration (see train/accel.py): mixed precision (AMP) and multi-GPU DataParallel
+are enabled from config; both are no-ops on CPU so the CPU path is unchanged. The base
+backbone modules stay unwrapped (for EMA / optimizer / checkpoint); forward passes go
+through autocast+DataParallel runners that share the same parameters.
 """
 from __future__ import annotations
 
@@ -18,6 +23,7 @@ import math
 from pathlib import Path
 
 import torch
+import torch.nn as nn
 
 from ..backbone.backbone import GlacierBackbone
 from ..backbone.tet import seasons_to_ids
@@ -26,6 +32,8 @@ from ..heads.head1_dino import Head1DINO
 from ..heads.head2_distance import Head2Distance
 from ..heads.head3_change import Head3Change
 from ..utils.logging_utils import get_logger, MetricLogger
+from .accel import (resolve_device, use_data_parallel, amp_settings, AutocastRunner,
+                    autocast_ctx, enable_tf32)
 from .checkpoint import save_checkpoint
 
 
@@ -38,12 +46,15 @@ def _cosine(step, total, start, end):
 class SSLTrainer:
     def __init__(self, config: Config, output_dir: str | Path, device: str = "cpu"):
         self.cfg = config
-        self.device = torch.device(device)
+        self.device = resolve_device(device)
         self.out = Path(output_dir)
         self.out.mkdir(parents=True, exist_ok=True)
         self.log = get_logger("trainer")
         self.metrics = MetricLogger(self.out / "metrics.jsonl")
 
+        enable_tf32(bool(config.get("train.tf32", True)))
+
+        # Base modules (own the parameters; used for EMA, optimizer, checkpointing).
         self.student = GlacierBackbone(config).to(self.device)
         self.teacher = GlacierBackbone(config).to(self.device)
         self.teacher.load_state_dict(self.student.state_dict())
@@ -53,6 +64,24 @@ class SSLTrainer:
         self.head1 = Head1DINO(config).to(self.device)
         self.head2 = Head2Distance(config).to(self.device)
         self.head3 = Head3Change(config).to(self.device)
+
+        # --- acceleration: AMP + DataParallel ---
+        self.amp_enabled, self.amp_dtype = amp_settings(
+            config.get("train.amp", False), config.get("train.amp_dtype", "float16"),
+            self.device)
+        self.scaler = torch.amp.GradScaler(self.device.type, enabled=self.amp_enabled)
+        self.dp = use_data_parallel(config.get("train.data_parallel", "auto"), self.device)
+
+        dtype, dtype_t = self.device.type, self.amp_dtype
+        self._student_fwd = AutocastRunner(self.student, self.amp_enabled, dtype_t, dtype)
+        self._teacher_fwd = AutocastRunner(self.teacher, self.amp_enabled, dtype_t, dtype)
+        if self.dp:
+            ids = list(range(torch.cuda.device_count()))
+            self._student_fwd = nn.DataParallel(self._student_fwd, device_ids=ids)
+            self._teacher_fwd = nn.DataParallel(self._teacher_fwd, device_ids=ids)
+            self.log.info("DataParallel enabled across %d GPUs: %s", len(ids), ids)
+        self.log.info("device=%s | amp=%s (%s) | data_parallel=%s",
+                      self.device, self.amp_enabled, self.amp_dtype, self.dp)
 
         params = (list(self.student.parameters())
                   + list(self.head1.student_head.parameters())
@@ -76,20 +105,16 @@ class SSLTrainer:
         self.head1.ema_update_head(momentum)
 
     # -- per-head loss computation ----------------------------------------------
-    def _dino_loss(self, batch):
+    def _dino_loss(self, batch, elapsed, span, season_ids):
         views = batch["dino_views"]
-        elapsed = batch["elapsed_years"].to(self.device)
-        span = batch["span_years"].to(self.device)
-        seasons = batch["seasons"]
-
         global_view_indices = [v for v, vw in enumerate(views)
                                if vw["view_type"] == "global"]
         # student logits for every view
         student_logits, student_valid, student_global_index = [], [], []
         for v, vw in enumerate(views):
-            img = vw["img"].to(self.device)
+            img = vw["img"].to(self.device, non_blocking=True)
             tmask = vw["timestamp_mask"].to(self.device)
-            out = self.student(img, tmask, elapsed, span, seasons)
+            out = self._student_fwd(img, tmask, elapsed, span, season_ids)
             ts = out["timestamp_out"]                           # (B,T,D)
             B, T, D = ts.shape
             logits = self.head1.student_head(ts.reshape(B * T, D))
@@ -103,9 +128,9 @@ class SSLTrainer:
         with torch.no_grad():
             for v in global_view_indices:
                 vw = views[v]
-                img = vw["img"].to(self.device)
+                img = vw["img"].to(self.device, non_blocking=True)
                 tmask = vw["timestamp_mask"].to(self.device)
-                out = self.teacher(img, tmask, elapsed, span, seasons)
+                out = self._teacher_fwd(img, tmask, elapsed, span, season_ids)
                 ts = out["timestamp_out"]
                 B, T, D = ts.shape
                 logits = self.head1.teacher_head(ts.reshape(B * T, D))
@@ -126,7 +151,7 @@ class SSLTrainer:
             z = base_out["timestamp_out"]
             return z.sum() * 0.0, {"n_pairs": 0}
         ts = base_out["timestamp_out"]                          # (B,T,D)
-        elapsed = batch["elapsed_years"]                        # (B,T) dates-derived
+        elapsed = batch["elapsed_years"]                        # (B,T) dates-derived (CPU ok)
         zi, zj, targets = [], [], []
         for (b, i, j) in pairs:
             zi.append(ts[b, i]); zj.append(ts[b, j])
@@ -140,7 +165,6 @@ class SSLTrainer:
 
     def _change_loss(self, batch):
         intervals = batch.get("intervals", [])
-        # keep only intervals whose both endpoints are valid in both views
         usable = [iv for iv in intervals
                   if bool(iv["view_a_valid"].all()) and bool(iv["view_b_valid"].all())]
         if len(usable) < 2:                                     # InfoNCE needs >=2 negatives
@@ -148,14 +172,16 @@ class SSLTrainer:
             return dummy.sum() * 0.0, {"n_intervals": len(usable)}
 
         def run_view(key):
-            imgs = torch.stack([iv[f"{key}_img"] for iv in usable]).to(self.device)  # (N,2,6,o,o)
+            imgs = torch.stack([iv[f"{key}_img"] for iv in usable]).to(
+                self.device, non_blocking=True)                 # (N,2,6,o,o)
             N = imgs.shape[0]
             tmask = torch.ones(N, 2, dtype=torch.bool, device=self.device)
             gaps = torch.tensor([iv["gap_years"] for iv in usable], device=self.device)
-            elapsed = torch.stack([torch.zeros(N, device=self.device), gaps], dim=1)  # (N,2)
+            elapsed = torch.stack([torch.zeros(N, device=self.device), gaps], dim=1)
             span = gaps
             seasons = [[iv["season_i"], iv["season_j"]] for iv in usable]
-            out = self.student(imgs, tmask, elapsed, span, seasons)
+            season_ids = seasons_to_ids(seasons, 2, self.device)
+            out = self._student_fwd(imgs, tmask, elapsed, span, season_ids)
             reg = out["regional_out"]                           # (N,2,64,D)
             return reg[:, 0], reg[:, 1]
 
@@ -168,25 +194,33 @@ class SSLTrainer:
     # -- one step ----------------------------------------------------------------
     def train_step(self, batch, step, total_steps):
         self.student.train(); self.head1.train(); self.head2.train(); self.head3.train()
-        self.optimizer.zero_grad()
+        self.optimizer.zero_grad(set_to_none=True)
 
-        # base-view backbone pass (shared by Head 2); kept with grad.
-        base_out = self.student(
-            batch["base"].to(self.device), batch["timestamp_mask"].to(self.device),
-            batch["elapsed_years"].to(self.device), batch["span_years"].to(self.device),
-            batch["seasons"])
+        elapsed = batch["elapsed_years"].to(self.device)
+        span = batch["span_years"].to(self.device)
+        T = batch["base"].shape[1]
+        season_ids = seasons_to_ids(batch["seasons"], T, self.device)
 
-        logs = {}
-        l_dino, m1 = self._dino_loss(batch); logs.update(m1)
-        l_dist, m2 = self._distance_loss(batch, base_out); logs.update(m2)
-        l_change, m3 = self._change_loss(batch); logs.update(m3)
+        with autocast_ctx(self.device.type, self.amp_dtype, self.amp_enabled):
+            # base-view backbone pass (shared by Head 2); kept with grad.
+            base_out = self._student_fwd(
+                batch["base"].to(self.device, non_blocking=True),
+                batch["timestamp_mask"].to(self.device), elapsed, span, season_ids)
 
-        total = (self.lambda_dino * l_dino + self.lambda_distance * l_dist
-                 + self.lambda_change * l_change)
-        total.backward()
+            logs = {}
+            l_dino, m1 = self._dino_loss(batch, elapsed, span, season_ids); logs.update(m1)
+            l_dist, m2 = self._distance_loss(batch, base_out); logs.update(m2)
+            l_change, m3 = self._change_loss(batch); logs.update(m3)
+            total = (self.lambda_dino * l_dino + self.lambda_distance * l_dist
+                     + self.lambda_change * l_change)
 
-        grad_norm = torch.nn.utils.clip_grad_norm_(self.student.parameters(), self.grad_clip)
-        self.optimizer.step()
+        self.scaler.scale(total).backward()
+        self.scaler.unscale_(self.optimizer)
+        all_params = [p for g in self.optimizer.param_groups for p in g["params"]]
+        torch.nn.utils.clip_grad_norm_(all_params, self.grad_clip)
+        bb_grad_norm = self._backbone_grad_norm()
+        self.scaler.step(self.optimizer)
+        self.scaler.update()
 
         momentum = _cosine(step, total_steps, float(self.cfg.head1.ema_momentum_start),
                            float(self.cfg.head1.ema_momentum_end))
@@ -195,10 +229,18 @@ class SSLTrainer:
         logs.update({
             "loss_total": float(total.detach()), "loss_dino": float(l_dino.detach()),
             "loss_distance": float(l_dist.detach()), "loss_change": float(l_change.detach()),
-            "backbone_grad_norm": float(grad_norm), "ema_momentum": momentum,
+            "backbone_grad_norm": bb_grad_norm, "ema_momentum": momentum,
         })
         self.metrics.log(step, **logs)
         return logs
+
+    @torch.no_grad()
+    def _backbone_grad_norm(self) -> float:
+        grads = [p.grad.detach().norm() for p in self.student.parameters()
+                 if p.grad is not None]
+        if not grads:
+            return 0.0
+        return float(torch.norm(torch.stack(grads)))
 
     # -- epoch loop --------------------------------------------------------------
     def fit(self, loader, epochs: int):

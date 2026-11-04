@@ -11,6 +11,10 @@ run:
 data:
   sqlite_path: glacier_dataset.sqlite3
   dataset_root: new_pipeline_dataset
+  # Base directory the manifest's relative band paths resolve against. null = the project
+  # root (local layout). Set it when the imagery is mounted apart from the code, e.g. on
+  # Kaggle: "/kaggle/input/<dataset-slug>" (which then contains new_pipeline_dataset/...).
+  data_root: null
   band_order: [B02, B03, B04, B08, B11, B12]   # FIXED order (VIT §2)
   scl_band: SCL
   reflectance_scale: 10000.0                    # uint16 DN -> reflectance
@@ -135,4 +139,11 @@ train:
   grad_clip: 3.0
   log_every: 10
   ckpt_every: 1
-  amp: false
+  # --- GPU acceleration ---
+  amp: true                 # mixed precision (autocast + GradScaler); auto-off on CPU
+  amp_dtype: float16        # float16 | bfloat16 (bf16 only on Ampere+; T4 uses fp16)
+  data_parallel: auto       # auto | true | false -> nn.DataParallel across visible GPUs
+                            # ("auto" enables it whenever >1 CUDA device is visible, e.g.
+                            #  Kaggle's 2x T4). For max efficiency use DDP (see README).
+  pin_memory: auto          # auto -> True on CUDA
+  tf32: true                # allow TF32 matmul/conv on Ampere+ (harmless elsewhere)

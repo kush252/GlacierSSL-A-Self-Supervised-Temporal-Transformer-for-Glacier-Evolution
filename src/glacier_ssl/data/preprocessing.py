@@ -49,6 +49,21 @@ class Preprocessor:
         self.invalid_scl = set(config.data.scl_invalid_classes)
         self.image_size = int(config.data.image_size)
         self.project_root = project_root or Path(__file__).resolve().parents[3]
+        # Band paths in the manifest are relative (e.g. "new_pipeline_dataset/train/...").
+        # They resolve against the code root by default, but `data.data_root` can point
+        # them somewhere else entirely — needed when the imagery is mounted read-only
+        # apart from the code, as on Kaggle (/kaggle/input/<slug>).
+        data_root = config.get("data.data_root", None)
+        if data_root:
+            dr = Path(str(data_root))
+            # A POSIX root ("/kaggle/input/...") has no drive letter, so pathlib on
+            # Windows reports is_absolute() False and would silently graft it onto the
+            # project drive. Treat a leading separator as absolute so a Kaggle config
+            # resolves identically whichever OS reads it.
+            absolute = dr.is_absolute() or str(data_root)[:1] in ("/", "\\")
+            self.data_root = dr if absolute else self.project_root / dr
+        else:
+            self.data_root = self.project_root
         self.norm_stats = norm_stats  # dict band -> {mean,std} in reflectance units
         # Alignment tolerance: bands are each warped to 512x512 over the glacier bbox;
         # 10m vs resampled-20m grids co-register to within ~1 pixel. Require identical
@@ -59,7 +74,7 @@ class Preprocessor:
         self._warned_align = False
 
     def _resolve(self, rel: str) -> Path:
-        return self.project_root / rel.replace("\\", "/")
+        return self.data_root / rel.replace("\\", "/")
 
     # -- raw IO ------------------------------------------------------------------
     def _read_band(self, path: Path):

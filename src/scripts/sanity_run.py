@@ -28,6 +28,17 @@ from glacier_ssl.utils.seed import seed_everything
 
 
 # Reduced-but-consistent config: image 128 -> ViT grid 8 -> HPE 8->4->2 = 4 regions.
+#
+# CAVEAT, and why this run is a mechanics check only: crop boxes are built from
+# data.image_size (sampling.py), while the GeoTIFFs on disk are natively 512x512 and
+# preprocessing does not downscale them. Setting image_size=128 therefore makes every
+# view — the "identity" base view included — a 128x128 crop of the TOP-LEFT CORNER of
+# each 512px scene rather than a downscaled full scene. Corner crops often land on
+# cloud/no-data, so crop_valid fails min_valid_fraction and whole steps report
+# `dino 0.0 / intervals 0`. That is expected here and is NOT a wiring fault: under the
+# production config (image_size 512) the base view is a true identity crop and its
+# crop_valid matches raw pixel validity exactly, with ~85% of timestamps valid.
+# Verify wiring with scripts/verify_system.py; judge data yield only at 512.
 SANITY_OVERRIDES = {
     "data": {"image_size": 128},
     "vit": {"image_size": 128, "patch_size": 16, "depth": 2, "num_heads": 6},

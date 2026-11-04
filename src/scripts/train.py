@@ -28,7 +28,7 @@ from glacier_ssl.utils.run_metadata import write_run_metadata
 from glacier_ssl.utils.seed import seed_everything, worker_init_fn
 
 
-def build_loader(cfg, project_root, split="train", limit=None):
+def build_loader(cfg, project_root, split="train", limit=None, pin_memory=False):
     seqs = load_manifest(project_root / str(cfg.data.manifest_path))
     seqs = split_glaciers(seqs, split)
     if limit:
@@ -37,9 +37,11 @@ def build_loader(cfg, project_root, split="train", limit=None):
     pre = Preprocessor(cfg, norm_stats=norm, project_root=project_root)
     sampler = WindowSampler(cfg)
     ds = GlacierWindowDataset(seqs, cfg, pre, sampler, epoch_seed=0)
+    nw = int(cfg.train.num_workers)
     loader = DataLoader(ds, batch_size=int(cfg.train.batch_size), shuffle=True,
-                        num_workers=int(cfg.train.num_workers),
-                        collate_fn=collate_windows, worker_init_fn=worker_init_fn)
+                        num_workers=nw, collate_fn=collate_windows,
+                        worker_init_fn=worker_init_fn, pin_memory=pin_memory,
+                        persistent_workers=nw > 0)
     return loader, len(seqs)
 
 
@@ -54,21 +56,28 @@ def main() -> None:
     cfg = load_config(args.config)
     if args.epochs is not None:
         cfg.set("train.epochs", args.epochs)
-    device = args.device
-    if device == "auto":
-        device = "cuda" if torch.cuda.is_available() else "cpu"
 
     log = get_logger("train", cfg.run.log_level)
+    # Report the hardware so Kaggle dual-GPU runs are easy to confirm at a glance.
+    if torch.cuda.is_available():
+        gpus = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
+        log.info("CUDA available: %d GPU(s): %s", len(gpus), gpus)
+    else:
+        log.info("CUDA not available -> running on CPU.")
+    is_cuda = torch.cuda.is_available() and args.device != "cpu"
+    pin = (str(cfg.get("train.pin_memory", "auto")) == "auto" and is_cuda) or \
+          cfg.get("train.pin_memory", False) is True
+
     seed = seed_everything(int(cfg.run.seed))
     project_root = Path(__file__).resolve().parents[2]
     run_dir = project_root / str(cfg.run.output_root) / time.strftime("%Y%m%d_%H%M%S")
     write_run_metadata(run_dir, cfg.to_dict(), seed)
-    log.info("Run dir: %s | device=%s | seed=%d", run_dir, device, seed)
+    log.info("Run dir: %s | requested device=%s | seed=%d", run_dir, args.device, seed)
 
-    loader, n = build_loader(cfg, project_root, "train", args.limit_glaciers)
+    loader, n = build_loader(cfg, project_root, "train", args.limit_glaciers, pin_memory=pin)
     log.info("Train glaciers: %d | steps/epoch=%d", n, len(loader))
 
-    trainer = SSLTrainer(cfg, output_dir=run_dir, device=device)
+    trainer = SSLTrainer(cfg, output_dir=run_dir, device=args.device)
     trainer.fit(loader, epochs=int(cfg.train.epochs))
     log.info("Training complete.")
 

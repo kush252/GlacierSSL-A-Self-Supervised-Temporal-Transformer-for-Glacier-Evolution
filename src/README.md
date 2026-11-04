@@ -68,7 +68,12 @@ python src/scripts/fit_normalization.py --max-observations 300
 # 3. tests — the acceptance gate (Phase 13)
 python -m pytest src/tests -q
 
-# 4. real-data end-to-end sanity run, reduced dims for CPU (Phase 14)
+# 4. wiring audit — gradient/optimizer coverage, masks, contracts (see below)
+python src/scripts/verify_system.py
+
+# 5. real-data end-to-end sanity run, reduced dims for CPU (Phase 14)
+#    NOTE: reduced dims crop a 128px corner out of the native 512px scenes, so
+#    `dino 0.0 / intervals 0` steps are expected here — see the caveat in the script.
 python src/scripts/sanity_run.py --glaciers 8 --steps 4
 
 # 5. full training (keep image_size/window small on CPU via a config override)
@@ -80,6 +85,147 @@ All configurable values (everything the docs tag *initial/baseline/experiment*) 
 default config keeps the full spec dims (768-wide, 512×512, 12+8 blocks, 64 regions). Tests
 and the sanity run use a smaller, internally-consistent config so shape/logic is exercised
 without a 12-block/512px cost on CPU.
+
+## GPU acceleration (incl. Kaggle dual-GPU)
+
+Acceleration is config-driven (`train:` in `default.yaml`) and implemented in
+[`glacier_ssl/train/accel.py`](glacier_ssl/train/accel.py). All of it is a no-op on CPU, so
+the CPU path and the tests are unchanged.
+
+| Config | Effect |
+|--------|--------|
+| `amp: true` + `amp_dtype: float16` | Mixed precision (autocast + GradScaler). ~2-3× faster + less memory on GPU. Kaggle T4 → use `float16`; A100 → `bfloat16`. Auto-off on CPU. |
+| `data_parallel: auto` | `nn.DataParallel` across **all visible GPUs** when >1 is present (e.g. Kaggle's 2× T4). `auto`\|`true`\|`false`. |
+| `tf32: true` | Allows TF32 matmul/conv on Ampere+ (harmless elsewhere). |
+| `pin_memory: auto` | Pinned host memory on CUDA for faster H2D copies. |
+
+`--device auto` picks CUDA when available. The base backbone modules stay unwrapped (so EMA,
+optimizer, and checkpointing are correct); forward passes go through autocast + DataParallel
+runners that share the same parameters. Season ids are tensorized before the backbone so
+DataParallel scatters them in lock-step with the images.
+
+**Note on efficiency:** `DataParallel` is the drop-in choice for a single-process notebook.
+For maximum throughput, `DistributedDataParallel` (one process per GPU, launched with
+`torchrun`/`mp.spawn`) is faster but needs a multi-process entrypoint; not wired here because
+Kaggle notebooks run single-process and this trainer calls the backbone many times per step.
+
+## Pre-training audit (run this before every launch)
+
+```bash
+python src/scripts/verify_system.py                 # 55 checks, ~40s on CPU
+python src/scripts/verify_system.py --device cuda    # also exercises the AMP path
+python src/scripts/verify_system.py --full-config    # + build the real 167M-param backbone
+```
+
+The pytest suite checks shapes, masks and directionality. This audit answers the questions
+that otherwise waste a whole run, and exits non-zero if any fail:
+
+| Group | What it proves |
+|-------|----------------|
+| A | derived dims agree across ViT/HPE/TET/heads (grid → regions → head widths) |
+| B | real forward shapes match `DOCS_phase0/tensor_contract_map.md` |
+| **C** | **every trainable parameter receives a finite, non-zero gradient** from the 3-head loss |
+| **D** | **every trainable parameter is actually inside the optimizer** (grads alone don't train) |
+| E | every gradient-receiving parameter moves after `optimizer.step()` |
+| F | teacher takes no gradient and moves only by EMA |
+| G | perturbing padded timesteps cannot change valid outputs |
+| H | T = 1,2,3,5,7 all run; a T=3 sequence is bit-identical padded to T=6 |
+| I | Head 2 is swap-symmetric; Head 3 preserves direction; neither receives what it predicts |
+| J | multi-step losses stay finite; Heads 2 and 3 descend on a fixed batch |
+
+Two parameters (`tet.context_norm.weight/bias`) are *expected* to receive no gradient and
+the audit asserts they are the only ones. They are the terminal LayerNorm producing
+`sequence_out`, which no baseline head consumes (Heads 1/2 take `timestamp_out`, Head 3
+takes `regional_out` — `head3_archi.md`). The context **token** is trained; only this final
+norm is outside the loss path, and at init it is exactly standard normalization. Attaching a
+loss there would invent architecture the plan does not specify.
+
+## Kaggle flow (2× T4)
+
+**1. Upload the code as a small second dataset.** Zip `src/` excluding caches and the
+manifest backup (~35 MB, mostly `manifest.json`):
+
+```bash
+python -c "import shutil; shutil.make_archive('glacier-ssl-code','zip','src')"
+```
+
+Create a Kaggle Dataset from that zip (slug e.g. `glacier-ssl-code`). The imagery dataset
+is separate — add both as notebook inputs.
+
+**2. Point the config at the data.** `src/configs/kaggle.yaml` holds the GPU settings;
+only `data.data_root` needs the real slug. The manifest stores *relative* paths beginning
+`new_pipeline_dataset/`, and the uploaded zip expands to `<slug>/new_pipeline_dataset/…`,
+so `data_root` is the dataset **root**, not the inner folder:
+
+```python
+import shutil, yaml, pathlib, glob
+shutil.unpack_archive('/kaggle/input/glacier-ssl-code/glacier-ssl-code.zip', '/kaggle/working/src')
+root = pathlib.Path(glob.glob('/kaggle/input/*/new_pipeline_dataset')[0]).parent  # auto-detect
+cfg = pathlib.Path('/kaggle/working/src/configs/kaggle.yaml')
+d = yaml.safe_load(cfg.read_text()); d['data']['data_root'] = str(root)
+cfg.write_text(yaml.safe_dump(d)); print('data_root =', root)
+```
+
+**3. Audit, then train.** Always run the audit first — it costs under a minute and catches a
+broken mount or a bad config before you burn GPU quota:
+
+```python
+!cd /kaggle/working && python src/scripts/verify_system.py --device cuda
+!cd /kaggle/working && python src/scripts/train.py --config src/configs/kaggle.yaml --device cuda
+```
+
+The log should print `CUDA available: 2 GPU(s)` and `DataParallel enabled across 2 GPUs`.
+Smoke-test with `--limit-glaciers 20 --epochs 1` before the real run.
+
+**4. Memory tuning — the part that actually bites.** One step runs the student backbone
+**seven times with gradients retained** (1 base + 4 DINO student views + 2 Head-3 interval
+views), so cost scales as `7 × batch_size × window_length` full ViT forwards. GPU 0 also
+carries the AdamW state (~2.7 GB for 167M params) because DataParallel keeps the master copy
+there, so GPU 0 is always the binding constraint. `kaggle.yaml` therefore starts at
+`max_length: 4`, `batch_size: 2` — raise `sampling.window.max_length` toward 8–12 until you
+OOM, then step back one notch. Keep `batch_size` even so both T4s are fed.
+
+Attention uses PyTorch's fused SDPA kernel, which never materializes the
+(heads, 1024, 1024) score matrix — without it the 1024-token ViT cannot fit in 16 GB at all.
+
+**5. Persist checkpoints — `/kaggle/working` is wiped when the session ends.** `output_root`
+is `/kaggle/working/runs`, which is ephemeral. Before the session dies, push the run to a
+permanent Kaggle Dataset:
+
+```python
+import json, pathlib
+out = pathlib.Path('/kaggle/working/runs'); 
+(out/'dataset-metadata.json').write_text(json.dumps(
+    {"title": "glacier-ssl-checkpoints", "id": "<username>/glacier-ssl-checkpoints",
+     "licenses": [{"name": "CC0-1.0"}]}))
+!kaggle datasets create -p /kaggle/working/runs      # first time
+# !kaggle datasets version -p /kaggle/working/runs -m "epoch 20"   # later runs
+```
+
+Then add that dataset as an input next session and resume from
+`/kaggle/input/glacier-ssl-checkpoints/ckpt_epoch*.pt` via `train/checkpoint.py`. With a
+12-hour session cap, plan on `ckpt_every: 1` and resuming across sessions.
+
+## Uploading the dataset to Kaggle (name sanitization)
+
+Kaggle Datasets reject file/folder names with characters outside `[A-Za-z0-9._-]`. **128
+region folders** here are named after GLIMS glaciers and contain apostrophes, accents, or
+parentheses (e.g. `DES_BRAMES_DE_L'OURS_1`, `BREITHORNGLETSCHER_(ZERMATT)`), so the upload
+fails with *"contains a forbidden character in name"*. Everything below region level is
+already safe. Fix with:
+
+```bash
+python src/scripts/sanitize_for_kaggle.py                 # dry run: shows what changes
+python src/scripts/sanitize_for_kaggle.py --apply --manifest   # rename on disk + fix manifest
+```
+
+It renames offending path components to safe equivalents and rewrites the manifest's stored
+paths with the same rule (keeping a `.bak`). The local SQLite DB is left untouched (not used
+on Kaggle). Re-zip `new_pipeline_dataset/` afterwards and upload.
+
+Upload the whole tree as **one zip** rather than 262k loose files — Kaggle's uploader makes
+roughly one request per file. The zip must keep `new_pipeline_dataset/` as its single
+top-level folder, because that is the prefix the manifest's relative paths carry.
 
 ## Data layout consumed
 

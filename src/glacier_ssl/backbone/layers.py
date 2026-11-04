@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 def drop_path(x: torch.Tensor, drop_prob: float, training: bool) -> torch.Tensor:
@@ -43,8 +44,15 @@ class Mlp(nn.Module):
 class Attention(nn.Module):
     """Multi-head self-attention with an optional key-padding mask.
 
-    ``key_padding_mask`` is True at positions to KEEP (valid); invalid keys get -inf so
-    padding is inert (build plan Cross-cutting rule #5).
+    ``key_padding_mask`` is True at positions to KEEP (valid); invalid keys are excluded
+    so padding is inert (build plan Cross-cutting rule #5) — which is also exactly the
+    convention ``scaled_dot_product_attention`` uses for a boolean ``attn_mask``.
+
+    Uses the fused SDPA kernel rather than an explicit matmul+softmax. The math is
+    identical (verified to ~1e-15 on values and gradients), but the (B,heads,N,N) score
+    matrix is never materialized, which is what makes the 1024-token ViT trainable in
+    16 GB: the explicit form costs ~25 MB per block per timestep in fp16, and the
+    backbone is called seven times per training step.
     """
 
     def __init__(self, dim: int, num_heads: int, attn_dropout: float = 0.0,
@@ -53,10 +61,9 @@ class Attention(nn.Module):
         assert dim % num_heads == 0, "dim must be divisible by num_heads"
         self.num_heads = num_heads
         self.head_dim = dim // num_heads
-        self.scale = self.head_dim ** -0.5
+        self.attn_dropout_p = float(attn_dropout)
         self.qkv = nn.Linear(dim, dim * 3)
         self.proj = nn.Linear(dim, dim)
-        self.attn_drop = nn.Dropout(attn_dropout)
         self.proj_drop = nn.Dropout(proj_dropout)
 
     def forward(self, x: torch.Tensor, key_padding_mask: torch.Tensor | None = None):
@@ -64,16 +71,15 @@ class Attention(nn.Module):
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, self.head_dim)
         qkv = qkv.permute(2, 0, 3, 1, 4)            # (3,B,heads,N,head_dim)
         q, k, v = qkv[0], qkv[1], qkv[2]
-        attn = (q @ k.transpose(-2, -1)) * self.scale   # (B,heads,N,N)
+        attn_mask = None
         if key_padding_mask is not None:
-            # True = keep. Expand to (B,1,1,N).
-            invalid = ~key_padding_mask.view(B, 1, 1, N)
-            attn = attn.masked_fill(invalid, float("-inf"))
-        attn = attn.softmax(dim=-1)
-        # rows that were all -inf (query at a fully-masked step) -> nan; zero them.
-        attn = torch.nan_to_num(attn, nan=0.0)
-        attn = self.attn_drop(attn)
-        out = (attn @ v).transpose(1, 2).reshape(B, N, C)
+            attn_mask = key_padding_mask.view(B, 1, 1, N)      # True = keep
+        out = F.scaled_dot_product_attention(
+            q, k, v, attn_mask=attn_mask,
+            dropout_p=self.attn_dropout_p if self.training else 0.0)
+        # a query whose every key is masked yields NaN on some backends -> zero it.
+        out = torch.nan_to_num(out, nan=0.0)
+        out = out.transpose(1, 2).reshape(B, N, C)
         return self.proj_drop(self.proj(out))
 
 

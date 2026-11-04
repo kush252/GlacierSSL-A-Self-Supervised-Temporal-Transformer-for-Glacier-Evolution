@@ -1,0 +1,680 @@
+{
+  "created_at": "2026-10-12T19:38:59",
+  "dataset_root": "D:\\Kush\\2nd Year\\projects\\glacier\\implementation\\new_pipeline_dataset",
+  "count": 168,
+  "renames": [
+    {
+      "old": "test/CEVEDALE_/_ZUFALL",
+      "new": "test/CEVEDALE_/ZUFALL"
+    },
+    {
+      "old": "test/LASA_/_LAASER",
+      "new": "test/LASA_/LAASER"
+    },
+    {
+      "old": "test/LASA_I_(ANGELO_BASSO)_/_LAASER_I",
+      "new": "test/LASA_I_(ANGELO_BASSO)_/LAASER_I"
+    },
+    {
+      "old": "test/MALAVALLE_/_\u00dcBELTAL",
+      "new": "test/MALAVALLE_/BELTAL"
+    },
+    {
+      "old": "test/MAZIA_/_MATSCHER",
+      "new": "test/MAZIA_/MATSCHER"
+    },
+    {
+      "old": "test/SOLDA_I_/_SULDEN_I",
+      "new": "test/SOLDA_I_/SULDEN_I"
+    },
+    {
+      "old": "test/BL\u00dcEMLISALPGLETSCHER",
+      "new": "test/BL_EMLISALPGLETSCHER"
+    },
+    {
+      "old": "test/B\u00c4CHLIGLETSCHER",
+      "new": "test/B_CHLIGLETSCHER"
+    },
+    {
+      "old": "test/CEVEDALE_",
+      "new": "test/CEVEDALE"
+    },
+    {
+      "old": "test/DES_BRAMES_DE_L'OURS_1",
+      "new": "test/DES_BRAMES_DE_L_OURS_1"
+    },
+    {
+      "old": "test/DES_P\u00c9LERINS",
+      "new": "test/DES_P_LERINS"
+    },
+    {
+      "old": "test/DU_D\u00d4ME_DE_CHASSEFOR\u00caT_4",
+      "new": "test/DU_D_ME_DE_CHASSEFOR_T_4"
+    },
+    {
+      "old": "test/DU_G\u00c9N\u00c9PY",
+      "new": "test/DU_G_N_PY"
+    },
+    {
+      "old": "test/FUORCLA_D'UREZZAS",
+      "new": "test/FUORCLA_D_UREZZAS"
+    },
+    {
+      "old": "test/GHIACCIAIO_DEL_BAS\u00d2DINO",
+      "new": "test/GHIACCIAIO_DEL_BAS_DINO"
+    },
+    {
+      "old": "test/GLACIER_D'ARSINE",
+      "new": "test/GLACIER_D_ARSINE"
+    },
+    {
+      "old": "test/GLACIER_SUP\u00c9RIEUR_DES_AIGUILLES_ROUGES_ZENTRAL",
+      "new": "test/GLACIER_SUP_RIEUR_DES_AIGUILLES_ROUGES_ZENTRAL"
+    },
+    {
+      "old": "test/GRAND_D\u00c9SERT",
+      "new": "test/GRAND_D_SERT"
+    },
+    {
+      "old": "test/G\u00c4LTEGLETSCHER_NE",
+      "new": "test/G_LTEGLETSCHER_NE"
+    },
+    {
+      "old": "test/G\u00c4RSTENGLETSCHER",
+      "new": "test/G_RSTENGLETSCHER"
+    },
+    {
+      "old": "test/HAUT_GLACIER_D'AROLLA",
+      "new": "test/HAUT_GLACIER_D_AROLLA"
+    },
+    {
+      "old": "test/LASA_",
+      "new": "test/LASA"
+    },
+    {
+      "old": "test/LASA_I_(ANGELO_BASSO)_",
+      "new": "test/LASA_I__ANGELO_BASSO"
+    },
+    {
+      "old": "test/LIAST\u00d8LBREEN",
+      "new": "test/LIAST_LBREEN"
+    },
+    {
+      "old": "test/L\u00d6TSCHEGLETSCHER",
+      "new": "test/L_TSCHEGLETSCHER"
+    },
+    {
+      "old": "test/MALAVALLE_",
+      "new": "test/MALAVALLE"
+    },
+    {
+      "old": "test/MAZIA_",
+      "new": "test/MAZIA"
+    },
+    {
+      "old": "test/ROTHORNGLETSCHER_(ZERMATT)",
+      "new": "test/ROTHORNGLETSCHER__ZERMATT"
+    },
+    {
+      "old": "test/ROTTALGLETSCHER_(LAUTERBRUNNEN)",
+      "new": "test/ROTTALGLETSCHER__LAUTERBRUNNEN"
+    },
+    {
+      "old": "test/SIDELENGLETSCHER_(UR)",
+      "new": "test/SIDELENGLETSCHER__UR"
+    },
+    {
+      "old": "test/SOLDA_I_",
+      "new": "test/SOLDA_I"
+    },
+    {
+      "old": "test/SUP\u00c9RIEUR_DES_BALMES",
+      "new": "test/SUP_RIEUR_DES_BALMES"
+    },
+    {
+      "old": "test/S\u00c5TA",
+      "new": "test/S_TA"
+    },
+    {
+      "old": "test/VADRET_D'AGNEL",
+      "new": "test/VADRET_D_AGNEL"
+    },
+    {
+      "old": "train/CRODA_/_GEPATSCH",
+      "new": "train/CRODA_/GEPATSCH"
+    },
+    {
+      "old": "train/DE_PR\u00c9MOU_1/G006862E45413N/2023_JJA/SCL (1).tif",
+      "new": "train/DE_PR\u00c9MOU_1/G006862E45413N/2023_JJA/SCL_1_.tif"
+    },
+    {
+      "old": "train/FORCOLA_/_FURKELE",
+      "new": "train/FORCOLA_/FURKELE"
+    },
+    {
+      "old": "train/GIGANTE_OCCIDENTALE_(RIES_OVEST)_/_WESTL._RIESER",
+      "new": "train/GIGANTE_OCCIDENTALE_(RIES_OVEST)_/WESTL._RIESER"
+    },
+    {
+      "old": "train/GRAMES_/_GRAMSEN",
+      "new": "train/GRAMES_/GRAMSEN"
+    },
+    {
+      "old": "train/GRAN_PILASTRO_/_GLIDER",
+      "new": "train/GRAN_PILASTRO_/GLIDER"
+    },
+    {
+      "old": "train/GRAVA_/_GRAF",
+      "new": "train/GRAVA_/GRAF"
+    },
+    {
+      "old": "train/MADACCIO_/_MADATSCH",
+      "new": "train/MADACCIO_/MADATSCH"
+    },
+    {
+      "old": "train/MONTARSO_/_FEUERSTEIN",
+      "new": "train/MONTARSO_/FEUERSTEIN"
+    },
+    {
+      "old": "train/NEVES_EST_(NEVES)_/_\u00d6STL._NEVESER",
+      "new": "train/NEVES_EST_(NEVES)_/STL._NEVESER"
+    },
+    {
+      "old": "train/ORTLES_BASSO_/_ORTLER_NIEDERER",
+      "new": "train/ORTLES_BASSO_/ORTLER_NIEDERER"
+    },
+    {
+      "old": "train/QUAIRA_BIANCA_/_WEISSKAR",
+      "new": "train/QUAIRA_BIANCA_/WEISSKAR"
+    },
+    {
+      "old": "train/SOLDA_/_SULDEN",
+      "new": "train/SOLDA_/SULDEN"
+    },
+    {
+      "old": "train/VALLELUNGA_/_LANGTAUFERER",
+      "new": "train/VALLELUNGA_/LANGTAUFERER"
+    },
+    {
+      "old": "train/VEDRETTA_ALTA_/_HOHENFERNER",
+      "new": "train/VEDRETTA_ALTA_/HOHENFERNER"
+    },
+    {
+      "old": "train/VEDRETTA_LUNGA_/_LANGENFERNER",
+      "new": "train/VEDRETTA_LUNGA_/LANGENFERNER"
+    },
+    {
+      "old": "train/9\u00d0\u00b0",
+      "new": "train/9"
+    },
+    {
+      "old": "train/BAS_GLACIER_D'AROLLA",
+      "new": "train/BAS_GLACIER_D_AROLLA"
+    },
+    {
+      "old": "train/BLOMST\u00d8LSKARDSBREEN",
+      "new": "train/BLOMST_LSKARDSBREEN"
+    },
+    {
+      "old": "train/BL\u00c5SKAVLEN",
+      "new": "train/BL_SKAVLEN"
+    },
+    {
+      "old": "train/BL\u00dcEMLISALPFIRN",
+      "new": "train/BL_EMLISALPFIRN"
+    },
+    {
+      "old": "train/BREITHORNGLETSCHER_(LAUTERBRUNNEN)",
+      "new": "train/BREITHORNGLETSCHER__LAUTERBRUNNEN"
+    },
+    {
+      "old": "train/BREITHORNGLETSCHER_(ZERMATT)",
+      "new": "train/BREITHORNGLETSCHER__ZERMATT"
+    },
+    {
+      "old": "train/BUUL'GEN",
+      "new": "train/BUUL_GEN"
+    },
+    {
+      "old": "train/B\u00c4CHIGLETSCHER",
+      "new": "train/B_CHIGLETSCHER"
+    },
+    {
+      "old": "train/CARDONN\u00c8",
+      "new": "train/CARDONN"
+    },
+    {
+      "old": "train/CED\u00c8C",
+      "new": "train/CED_C"
+    },
+    {
+      "old": "train/CRODA_",
+      "new": "train/CRODA"
+    },
+    {
+      "old": "train/DE_G\u00c9BROULAZ",
+      "new": "train/DE_G_BROULAZ"
+    },
+    {
+      "old": "train/DE_L'ARCELLIN_-_ROCHE_FERRAN_1",
+      "new": "train/DE_L_ARCELLIN_-_ROCHE_FERRAN_1"
+    },
+    {
+      "old": "train/DE_L'ARGENTI\u00c8RE",
+      "new": "train/DE_L_ARGENTI_RE"
+    },
+    {
+      "old": "train/DE_L'EP\u00c9NA",
+      "new": "train/DE_L_EP_NA"
+    },
+    {
+      "old": "train/DE_M\u00c8AN_MARTIN_1",
+      "new": "train/DE_M_AN_MARTIN_1"
+    },
+    {
+      "old": "train/DE_PR\u00c9MOU_1",
+      "new": "train/DE_PR_MOU_1"
+    },
+    {
+      "old": "train/DE_TR\u00c9-LA-T\u00caTE_1",
+      "new": "train/DE_TR_-LA-T_TE_1"
+    },
+    {
+      "old": "train/DU_D\u00d4ME_DE_CHASSEFOR\u00caT_1",
+      "new": "train/DU_D_ME_DE_CHASSEFOR_T_1"
+    },
+    {
+      "old": "train/ERINC_(SUPPA_DURAK)",
+      "new": "train/ERINC__SUPPA_DURAK"
+    },
+    {
+      "old": "train/FORCOLA_",
+      "new": "train/FORCOLA"
+    },
+    {
+      "old": "train/F\u00c5BERGST\u00d8LSBREEN",
+      "new": "train/F_BERGST_LSBREEN"
+    },
+    {
+      "old": "train/GHIACCIAIO_DEL_CAVAGN\u00d6\u00d6",
+      "new": "train/GHIACCIAIO_DEL_CAVAGN"
+    },
+    {
+      "old": "train/GIGANTE_OCCIDENTALE_(RIES_OVEST)_",
+      "new": "train/GIGANTE_OCCIDENTALE__RIES_OVEST"
+    },
+    {
+      "old": "train/GLACIER_D'OTEMMA_ZENTRAL",
+      "new": "train/GLACIER_D_OTEMMA_ZENTRAL"
+    },
+    {
+      "old": "train/GLACIER_DES_FOLL\u00c2TS",
+      "new": "train/GLACIER_DES_FOLL_TS"
+    },
+    {
+      "old": "train/GLACIER_DE_CORBASSI\u00c8RE",
+      "new": "train/GLACIER_DE_CORBASSI_RE"
+    },
+    {
+      "old": "train/GLACIER_DE_CR\u00caTE_S\u00c8CHE",
+      "new": "train/GLACIER_DE_CR_TE_S_CHE"
+    },
+    {
+      "old": "train/GLACIER_DE_FEN\u00caTRE",
+      "new": "train/GLACIER_DE_FEN_TRE"
+    },
+    {
+      "old": "train/GLACIER_DE_L'AILEFROIDE_1",
+      "new": "train/GLACIER_DE_L_AILEFROIDE_1"
+    },
+    {
+      "old": "train/GLACIER_DE_L'EN_DARREY",
+      "new": "train/GLACIER_DE_L_EN_DARREY"
+    },
+    {
+      "old": "train/GLACIER_DE_LA_S\u00c2LE_N",
+      "new": "train/GLACIER_DE_LA_S_LE_N"
+    },
+    {
+      "old": "train/GLACIER_DE_PI\u00c8CE",
+      "new": "train/GLACIER_DE_PI_CE"
+    },
+    {
+      "old": "train/GLACIER_DE_S\u00c9GURET_FORAN",
+      "new": "train/GLACIER_DE_S_GURET_FORAN"
+    },
+    {
+      "old": "train/GLACIER_DU_CLOT_DE_L'HOMME_PELVOUX_VIOLETTES_1",
+      "new": "train/GLACIER_DU_CLOT_DE_L_HOMME_PELVOUX_VIOLETTES_1"
+    },
+    {
+      "old": "train/GLACIER_DU_GI\u00c9TRO",
+      "new": "train/GLACIER_DU_GI_TRO"
+    },
+    {
+      "old": "train/GLACIER_DU_MONT_MIN\u00c9_ZENTRAL",
+      "new": "train/GLACIER_DU_MONT_MIN__ZENTRAL"
+    },
+    {
+      "old": "train/GLACIER_DU_MON\u00caTIER_1",
+      "new": "train/GLACIER_DU_MON_TIER_1"
+    },
+    {
+      "old": "train/GLACIER_DU_S\u00c9L\u00c9_1",
+      "new": "train/GLACIER_DU_S_L__1"
+    },
+    {
+      "old": "train/GL\u00c4RNISCHFIRN",
+      "new": "train/GL_RNISCHFIRN"
+    },
+    {
+      "old": "train/GRAMES_",
+      "new": "train/GRAMES"
+    },
+    {
+      "old": "train/GRAN_PILASTRO_",
+      "new": "train/GRAN_PILASTRO"
+    },
+    {
+      "old": "train/GRAVA_",
+      "new": "train/GRAVA"
+    },
+    {
+      "old": "train/GRIENB\u00c4RGLIGLETSCHER",
+      "new": "train/GRIENB_RGLIGLETSCHER"
+    },
+    {
+      "old": "train/GRIESSENGLETSCHER_(ENGELBERG)",
+      "new": "train/GRIESSENGLETSCHER__ENGELBERG"
+    },
+    {
+      "old": "train/GRIESSGLETSCHER_(UNTERSCH\u00c4CHEN)",
+      "new": "train/GRIESSGLETSCHER__UNTERSCH_CHEN"
+    },
+    {
+      "old": "train/GROSSELEND_KEES,",
+      "new": "train/GROSSELEND_KEES"
+    },
+    {
+      "old": "train/GROSSER_GOSAU_GLETSCHER,",
+      "new": "train/GROSSER_GOSAU_GLETSCHER"
+    },
+    {
+      "old": "train/GR\u00c5FJELLSBREA",
+      "new": "train/GR_FJELLSBREA"
+    },
+    {
+      "old": "train/GR\u00dcEBUGLETSCHER_E",
+      "new": "train/GR_EBUGLETSCHER_E"
+    },
+    {
+      "old": "train/G\u00c4LTEGLETSCHER_SW",
+      "new": "train/G_LTEGLETSCHER_SW"
+    },
+    {
+      "old": "train/G\u00dcFERGLETSCHER_N",
+      "new": "train/G_FERGLETSCHER_N"
+    },
+    {
+      "old": "train/G\u00dcFERGLETSCHER_SE",
+      "new": "train/G_FERGLETSCHER_SE"
+    },
+    {
+      "old": "train/HALLSTTTER_GLETSCHER,",
+      "new": "train/HALLSTTTER_GLETSCHER"
+    },
+    {
+      "old": "train/HANGEND_GLETSCHER_(INNERTKIRCHEN)",
+      "new": "train/HANGEND_GLETSCHER__INNERTKIRCHEN"
+    },
+    {
+      "old": "train/HOB\u00c4RGGLETSCHER",
+      "new": "train/HOB_RGGLETSCHER"
+    },
+    {
+      "old": "train/HOCHALM_KEES,",
+      "new": "train/HOCHALM_KEES"
+    },
+    {
+      "old": "train/H\u00d6HBERGGLETSCHER",
+      "new": "train/H_HBERGGLETSCHER"
+    },
+    {
+      "old": "train/H\u00dcFIFIRN",
+      "new": "train/H_FIFIRN"
+    },
+    {
+      "old": "train/JAMTAL_FERNER,",
+      "new": "train/JAMTAL_FERNER"
+    },
+    {
+      "old": "train/J\u00d6RIGLETSCHER",
+      "new": "train/J_RIGLETSCHER"
+    },
+    {
+      "old": "train/KESSLER_KEES_M,",
+      "new": "train/KESSLER_KEES_M"
+    },
+    {
+      "old": "train/KHASAN-KHOYI-SIYRYL'GEN_CHENTRAL'NYI",
+      "new": "train/KHASAN-KHOYI-SIYRYL_GEN_CHENTRAL_NYI"
+    },
+    {
+      "old": "train/KLBERSPITZ_KEES,",
+      "new": "train/KLBERSPITZ_KEES"
+    },
+    {
+      "old": "train/KLEINELEND_KEES,",
+      "new": "train/KLEINELEND_KEES"
+    },
+    {
+      "old": "train/LAILA_CENTRAL'NYI",
+      "new": "train/LAILA_CENTRAL_NYI"
+    },
+    {
+      "old": "train/LAVACCI\u00d9",
+      "new": "train/LAVACCI"
+    },
+    {
+      "old": "train/L\u00c4NTAGLETSCHER",
+      "new": "train/L_NTAGLETSCHER"
+    },
+    {
+      "old": "train/MADACCIO_",
+      "new": "train/MADACCIO"
+    },
+    {
+      "old": "train/MIDTH\u00d8BREEN",
+      "new": "train/MIDTH_BREEN"
+    },
+    {
+      "old": "train/MONCORV\u00c8",
+      "new": "train/MONCORV"
+    },
+    {
+      "old": "train/MONTARSO_",
+      "new": "train/MONTARSO"
+    },
+    {
+      "old": "train/MONT_MIN\u00c9_S_1",
+      "new": "train/MONT_MIN__S_1"
+    },
+    {
+      "old": "train/MURITZ'N_KEES_M1,",
+      "new": "train/MURITZ_N_KEES_M1"
+    },
+    {
+      "old": "train/NEVES_EST_(NEVES)_",
+      "new": "train/NEVES_EST__NEVES"
+    },
+    {
+      "old": "train/ORTLES_BASSO_",
+      "new": "train/ORTLES_BASSO"
+    },
+    {
+      "old": "train/OSAND_SUD__(SABBIONE)",
+      "new": "train/OSAND_SUD___SABBIONE"
+    },
+    {
+      "old": "train/PLAN_N\u00c9V\u00c9_NE",
+      "new": "train/PLAN_N_V__NE"
+    },
+    {
+      "old": "train/QUAIRA_BIANCA_",
+      "new": "train/QUAIRA_BIANCA"
+    },
+    {
+      "old": "train/ROTTALGLETSCHER_(SAAS_ALMAGELL)",
+      "new": "train/ROTTALGLETSCHER__SAAS_ALMAGELL"
+    },
+    {
+      "old": "train/R\u00c4NFENGLETSCHER",
+      "new": "train/R_NFENGLETSCHER"
+    },
+    {
+      "old": "train/R\u00c4NFENJOCH",
+      "new": "train/R_NFENJOCH"
+    },
+    {
+      "old": "train/R\u00dcTIFIRN",
+      "new": "train/R_TIFIRN"
+    },
+    {
+      "old": "train/SCHLADMINGER_GLETSCHER,",
+      "new": "train/SCHLADMINGER_GLETSCHER"
+    },
+    {
+      "old": "train/SCHLOSSBERGGLETSCHER_(ERSTFELD)",
+      "new": "train/SCHLOSSBERGGLETSCHER__ERSTFELD"
+    },
+    {
+      "old": "train/SCHLOSSFIRN_(ISENTHAL)",
+      "new": "train/SCHLOSSFIRN__ISENTHAL"
+    },
+    {
+      "old": "train/SCH\u00d6NB\u00dcHLGLETSCHER",
+      "new": "train/SCH_NB_HLGLETSCHER"
+    },
+    {
+      "old": "train/SHKHEL`DY",
+      "new": "train/SHKHEL_DY"
+    },
+    {
+      "old": "train/SOLDA_",
+      "new": "train/SOLDA"
+    },
+    {
+      "old": "train/ST\u00c4FELFIRN",
+      "new": "train/ST_FELFIRN"
+    },
+    {
+      "old": "train/TISCHLERKAR_KEES_M2,",
+      "new": "train/TISCHLERKAR_KEES_M2"
+    },
+    {
+      "old": "train/TRIFTGLETSCHER_(ZERMATT)",
+      "new": "train/TRIFTGLETSCHER__ZERMATT"
+    },
+    {
+      "old": "train/TRIFTGLETSCHER_NE_(FIESCHERTAL)",
+      "new": "train/TRIFTGLETSCHER_NE__FIESCHERTAL"
+    },
+    {
+      "old": "train/TRIFTGLETSCHER_NE_(SAAS_GRUND)",
+      "new": "train/TRIFTGLETSCHER_NE__SAAS_GRUND"
+    },
+    {
+      "old": "train/TRIFTGLETSCHER_SE_(SAAS_GRUND)",
+      "new": "train/TRIFTGLETSCHER_SE__SAAS_GRUND"
+    },
+    {
+      "old": "train/TRIFTGLETSCHER_W_(FIESCHERTAL)",
+      "new": "train/TRIFTGLETSCHER_W__FIESCHERTAL"
+    },
+    {
+      "old": "train/TR\u00c6SFONN",
+      "new": "train/TR_SFONN"
+    },
+    {
+      "old": "train/TSCHINGELFIRN_S_(KANDERSTEG)",
+      "new": "train/TSCHINGELFIRN_S__KANDERSTEG"
+    },
+    {
+      "old": "train/T\u00c4LLIGLETSCHER_E_(ZWISCHENBERGEN)",
+      "new": "train/T_LLIGLETSCHER_E__ZWISCHENBERGEN"
+    },
+    {
+      "old": "train/T\u00c4LLIGLETSCHER_W",
+      "new": "train/T_LLIGLETSCHER_W"
+    },
+    {
+      "old": "train/T\u00c4LLIGLETSCHER_W_(ZWISCHENBERGEN)",
+      "new": "train/T_LLIGLETSCHER_W__ZWISCHENBERGEN"
+    },
+    {
+      "old": "train/UNNERB\u00c4CHGLETSCHER_W",
+      "new": "train/UNNERB_CHGLETSCHER_W"
+    },
+    {
+      "old": "train/VADREC_DA_L'ALBIGNA",
+      "new": "train/VADREC_DA_L_ALBIGNA"
+    },
+    {
+      "old": "train/VADRET_D'UREZZAS",
+      "new": "train/VADRET_D_UREZZAS"
+    },
+    {
+      "old": "train/VADRET_DAL_CHAP\u00dcTSCHIN",
+      "new": "train/VADRET_DAL_CHAP_TSCHIN"
+    },
+    {
+      "old": "train/VADRET_DAL_G\u00dcZ",
+      "new": "train/VADRET_DAL_G_Z"
+    },
+    {
+      "old": "train/VADRET_DA_PAL\u00dc",
+      "new": "train/VADRET_DA_PAL"
+    },
+    {
+      "old": "train/VADRET_DA_RAD\u00d6NT",
+      "new": "train/VADRET_DA_RAD_NT"
+    },
+    {
+      "old": "train/VALLELUNGA_",
+      "new": "train/VALLELUNGA"
+    },
+    {
+      "old": "train/VEDRETTA_ALTA_",
+      "new": "train/VEDRETTA_ALTA"
+    },
+    {
+      "old": "train/VEDRETTA_LUNGA_",
+      "new": "train/VEDRETTA_LUNGA"
+    },
+    {
+      "old": "train/WESTLICHER_TRIPP_KEES,",
+      "new": "train/WESTLICHER_TRIPP_KEES"
+    },
+    {
+      "old": "train/WINKL_KEES,",
+      "new": "train/WINKL_KEES"
+    },
+    {
+      "old": "train/ZEBR\u00d9_EST",
+      "new": "train/ZEBR__EST"
+    },
+    {
+      "old": "train/ZENB\u00c4CHENGLETSCHER",
+      "new": "train/ZENB_CHENGLETSCHER"
+    },
+    {
+      "old": "train/\u00c4RLENGLETSCHER_N",
+      "new": "train/RLENGLETSCHER_N"
+    },
+    {
+      "old": "train/\u00dcSSRE_BALTSCHIEDERGLETSCHER",
+      "new": "train/SSRE_BALTSCHIEDERGLETSCHER"
+    }
+  ],
+  "collisions": []
+}
