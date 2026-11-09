@@ -162,7 +162,7 @@ class TemporalEvolutionTransformer(nn.Module):
         return regional + season + elapsed
 
     def forward(self, regional, season_ids, elapsed_years, span_years, tmask,
-                region_mask=None):
+                region_mask=None, time_blind: bool = False):
         """
         regional:      (B, T, 64, 768) from HPE
         season_ids:    (B, T) long
@@ -170,13 +170,25 @@ class TemporalEvolutionTransformer(nn.Module):
         span_years:    (B,) float
         tmask:         (B, T) bool, True = valid timestamp
         region_mask:   (B, T, 64) bool optional, True = valid region
+        time_blind:    withhold ALL explicit temporal metadata (season, elapsed time, span).
+
+        Time-blind mode is the temporal firewall used by the pretext paths whose TARGET is
+        a temporal quantity (Head 2: elapsed time; Head 3: change across an interval).
+        With the metadata present, those targets are deterministic functions of the input
+        and the heads can be solved by decoding the encodings instead of reading the
+        imagery. Without it, temporal attention sees an unordered set of observations, so
+        any temporal signal the head uses must come from appearance. The weights are shared
+        with the time-aware path; only the additive encodings are skipped.
         """
         B, T, R, D = regional.shape
-        x = self.add_temporal_embeddings(regional, season_ids, elapsed_years)
-        # zero temporal embeddings on padded timesteps (kept inert, extra safety).
+        if time_blind:
+            x = regional
+            context = self.sequence_token.expand(B, D)
+        else:
+            x = self.add_temporal_embeddings(regional, season_ids, elapsed_years)
+            context = self.sequence_token.expand(B, D) + self.span_encoding(span_years)
+        # zero padded timesteps (kept inert, extra safety).
         x = x * tmask.view(B, T, 1, 1).float()
-
-        context = self.sequence_token.expand(B, D) + self.span_encoding(span_years)
 
         ckpt = self.grad_checkpoint and self.training and torch.is_grad_enabled()
         for blk in self.blocks:

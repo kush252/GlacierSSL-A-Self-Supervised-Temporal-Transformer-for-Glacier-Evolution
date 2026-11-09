@@ -71,7 +71,7 @@ def make_ctx(world, tmp_path, **kw):
     store = ResultsStore(tmp_path, "run", manifest={"checkpoint": {"path": "x", "step": 7}})
     return context.EvalContext(
         cfg=world["cfg"], store=store, device=DEV, project_root=tmp_path, primary="student",
-        test=world["fs"], train=None, bundle=world["bundle"], seed=0, baseline="random",
+        test=world["fs"], train=None, bundle=world["bundle"], seed=0, baselines=["random"],
         extra={"occlusion_glaciers": 0}, **kw)
 
 

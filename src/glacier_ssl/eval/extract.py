@@ -14,7 +14,9 @@ tests need, so the five tests share one expensive pass:
                              timestamps and re-run only the (cheap) TET, exactly.
 
 Models: ``student`` / ``teacher`` come from the checkpoint; ``random`` is the identical
-architecture with fresh weights, the "is it better than random" baseline.
+architecture with fresh weights, the "is it better than random" baseline; ``pretrained``
+loads only the pretrained ViT (e.g. Prithvi) into fresh HPE/TET, the "does glacier SSL add
+anything beyond the off-the-shelf encoder" baseline.
 """
 from __future__ import annotations
 
@@ -30,6 +32,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from ..backbone.backbone import GlacierBackbone
 from ..backbone.tet import seasons_to_ids
+from ..backbone.vit import load_pretrained
 from ..config import Config
 from ..data.augmentation import apply_view
 from ..data.manifest import GlacierSequence, load_manifest, split_glaciers
@@ -66,9 +69,16 @@ def build_backbones(cfg: Config, bundle: Optional[dict], names: list[str],
                     device: torch.device) -> dict[str, GlacierBackbone]:
     out = {}
     for name in names:
-        if name == "random":
+        if name in ("random", "pretrained"):
             torch.manual_seed(int(cfg.run.seed))      # fixed, so the baseline is reproducible
             bb = GlacierBackbone(cfg)
+            if name == "pretrained":
+                path = cfg.get("vit.pretrained_ckpt", None)
+                if not path or not Path(str(path)).exists():
+                    raise FileNotFoundError(
+                        f"'pretrained' baseline needs vit.pretrained_ckpt (got {path!r}); "
+                        "pass --pretrained-ckpt")
+                load_pretrained(bb.vit, str(path), cfg)
         else:
             if bundle is None:
                 raise ValueError(f"model '{name}' needs a checkpoint")
@@ -173,10 +183,18 @@ def make_item(seq, obs, img: torch.Tensor, valid: torch.Tensor) -> dict:
 
 
 # --------------------------------------------------------------------------- forward
+def head2_key(cfg: Config) -> str:
+    """Feature Head 2 must be scored on: the path it was TRAINED on. Checkpoints trained
+    with the temporal firewall read a time-blind TET pass (older configs lack the key)."""
+    return "timestamp_out_blind" if bool(cfg.get("head2.time_blind", False))         else "timestamp_out"
+
+
 def run_tet(bb: GlacierBackbone, regional: torch.Tensor, seasons: list[str],
-            elapsed: np.ndarray, device: torch.device, amp: tuple) -> dict:
+            elapsed: np.ndarray, device: torch.device, amp: tuple,
+            time_blind: bool = False) -> dict:
     """TET over (1,T,R,D) regional tokens for ONE sequence. Dates drive all temporal
-    quantities (elapsed measured from the first timestamp in THIS sequence)."""
+    quantities (elapsed measured from the first timestamp in THIS sequence); with
+    ``time_blind`` the explicit temporal metadata is withheld (see TET.forward)."""
     T = regional.shape[1]
     season_ids = seasons_to_ids([seasons], T, device)
     el = torch.as_tensor(np.asarray(elapsed), dtype=torch.float32, device=device)[None]
@@ -184,7 +202,8 @@ def run_tet(bb: GlacierBackbone, regional: torch.Tensor, seasons: list[str],
     tmask = torch.ones(1, T, dtype=torch.bool, device=device)
     enabled, dtype = amp
     with torch.no_grad(), autocast_ctx(device.type, dtype, enabled):
-        return bb.tet(regional.to(device), season_ids, el, span, tmask)
+        return bb.tet(regional.to(device), season_ids, el, span, tmask,
+                      time_blind=time_blind)
 
 
 def encode_tokens(bb: GlacierBackbone, imgs: torch.Tensor, device: torch.device,
@@ -198,7 +217,8 @@ def encode_tokens(bb: GlacierBackbone, imgs: torch.Tensor, device: torch.device,
     return torch.cat(parts, dim=1)
 
 
-def features_from_tokens(bb, tokens, seasons, elapsed, device, amp, keep_tokens):
+def features_from_tokens(bb, tokens, seasons, elapsed, device, amp, keep_tokens,
+                         blind: bool = False):
     out = run_tet(bb, tokens, seasons, elapsed, device, amp)
     rec = {
         "timestamp_out": out["timestamp_out"][0].float().cpu().numpy(),
@@ -206,6 +226,10 @@ def features_from_tokens(bb, tokens, seasons, elapsed, device, amp, keep_tokens)
         "visual_pool": tokens[0].float().mean(dim=1).cpu().numpy(),
         "tokens": tokens[0].half().cpu() if keep_tokens else None,   # bool for this model
     }
+    if blind:
+        # the time-blind pass the firewalled Head 2 trained on (TET only; ViT is reused)
+        ob = run_tet(bb, tokens, seasons, elapsed, device, amp, time_blind=True)
+        rec["timestamp_out_blind"] = ob["timestamp_out"][0].float().cpu().numpy()
     return rec
 
 
@@ -218,6 +242,7 @@ def extract_all(backbones: dict[str, GlacierBackbone], items, device: torch.devi
     """
     amp = amp_settings(cfg.get("train.amp", False), cfg.get("train.amp_dtype", "float16"),
                        device)
+    blind = bool(cfg.get("head2.time_blind", False))
     meta: dict[str, dict] = {}
     feats: dict[str, dict] = {n: {} for n in backbones}
     t0 = time.time()
@@ -233,7 +258,7 @@ def extract_all(backbones: dict[str, GlacierBackbone], items, device: torch.devi
             else:
                 keep = bool(keep_tokens)
             feats[name][gid] = features_from_tokens(
-                bb, tokens, m["seasons"], m["elapsed"], device, amp, keep)
+                bb, tokens, m["seasons"], m["elapsed"], device, amp, keep, blind)
         if (k + 1) % 5 == 0 or k + 1 == n_total:
             rate = (time.time() - t0) / (k + 1)
             log.info("extracted %d/%s glaciers (%.1fs each, ~%.0f min left)", k + 1,

@@ -23,7 +23,7 @@ import torch
 from ..data.manifest import GlacierSequence
 from ..data.sampling import elapsed_years_from_dates
 from .context import SEASON_ID, EvalContext
-from .extract import FeatureSet, usable
+from .extract import FeatureSet, head2_key, usable
 from .metrics import distance_regression_metrics
 from .stats import cluster_bootstrap_ratio, spearman
 from ..utils.logging_utils import get_logger
@@ -203,8 +203,11 @@ def feature_probes(ctx: EvalContext, P_test: dict, edges) -> dict[str, dict]:
     for model in ctx.models:
         if model not in ctx.train.feats or model not in ctx.test.feats:
             continue
-        for key, desc in (("timestamp_out", "post-TET (dates visible to TET)"),
-                          ("visual_pool", "pre-TET appearance only")):
+        keys = [("timestamp_out", "post-TET (dates visible to TET)"),
+                ("visual_pool", "pre-TET appearance only")]
+        if "timestamp_out_blind" in next(iter(ctx.test.feats[model].values())):
+            keys.insert(1, ("timestamp_out_blind", "post-TET, time-blind (firewall)"))
+        for key, desc in keys:
             ztr_i, ztr_j = gather(ctx.train.feats[model], ctx.train.gids, P_tr, key)
             zte_i, zte_j = gather(ctx.test.feats[model], ctx.test.gids, P_test, key)
             Xtr, Xte = _pair_features(ztr_i, ztr_j), _pair_features(zte_i, zte_j)
@@ -275,7 +278,8 @@ def run(ctx: EvalContext) -> dict:
     if len(P["gap"]) == 0:
         ctx.store.add_section("Test 1 - Head 2 (temporal distance)", "No usable pairs.")
         return {"skipped": True}
-    zi, zj = gather(ctx.test.feats["student"], ctx.test.gids, P, "timestamp_out")
+    key = head2_key(ctx.cfg)
+    zi, zj = gather(ctx.test.feats["student"], ctx.test.gids, P, key)
     pred = predict_head2(head2, zi, zj, ctx.device)
     main = score(pred, P, edges)
 
@@ -288,7 +292,9 @@ def run(ctx: EvalContext) -> dict:
     controls.update(metadata_baselines(ctx, P, edges))
     probes = feature_probes(ctx, P, edges)
 
-    rows = [_row("Head 2 (trained, student)", "post-TET timestamp_out", main)]
+    rows = [_row("Head 2 (trained, student)",
+                 "time-blind TET (firewall)" if key.endswith("_blind")
+                 else "post-TET timestamp_out", main)]
     for name, s in controls.items():
         rows.append(_row(name, "metadata only (no images, no true gap)", s))
     for name, (desc, s) in probes.items():

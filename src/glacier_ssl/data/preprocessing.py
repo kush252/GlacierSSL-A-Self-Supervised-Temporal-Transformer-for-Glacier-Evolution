@@ -11,6 +11,7 @@ Deterministic, leakage-free image preprocessing matching the ViT's input contrac
 """
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 from typing import Optional
 
@@ -24,6 +25,13 @@ except Exception:  # pragma: no cover - rasterio always present in this env
 from ..config import Config
 from ..utils.logging_utils import get_logger
 from .manifest import Observation
+
+
+# ESA processing baseline 04.00+ stores L2A reflectance as DN = 10000*rho + 1000
+# (BOA_ADD_OFFSET = -1000). Applies to late-2021 onward and to reprocessed products.
+BASELINE_OFFSET_DN = 1000.0
+_OFFSET_FROM = 4.0
+_OFFSET_DATE_FALLBACK = date(2022, 1, 25)     # ESA switch-over; used only if unrecorded
 
 
 class BandAlignmentError(ValueError):
@@ -65,6 +73,10 @@ class Preprocessor:
         else:
             self.data_root = self.project_root
         self.norm_stats = norm_stats  # dict band -> {mean,std} in reflectance units
+        # Remove the baseline-04.00 radiometric offset per scene. Absent from older
+        # configs, which therefore keep their original (unharmonised) preprocessing.
+        self.harmonize = bool(config.get("data.harmonize_baseline", False))
+        self._warned_baseline = False
         # Alignment tolerance: bands are each warped to 512x512 over the glacier bbox;
         # 10m vs resampled-20m grids co-register to within ~1 pixel. Require identical
         # shape+CRS always; allow sub-tolerance origin/extent drift unless strict.
@@ -150,6 +162,33 @@ class Preprocessor:
             valid &= ~invalid
         return valid
 
+    # -- radiometric harmonisation ----------------------------------------------
+    def baseline_offset(self, obs: Observation) -> float:
+        """DN offset to remove for this scene (0 when harmonisation is off)."""
+        if not self.harmonize:
+            return 0.0
+        b = getattr(obs, "processing_baseline", None)
+        if b not in (None, ""):
+            try:
+                return BASELINE_OFFSET_DN if float(b) >= _OFFSET_FROM else 0.0
+            except ValueError:
+                pass
+        if not self._warned_baseline:
+            self.log.warning("processing baseline not recorded for some scenes; falling back "
+                             "to the acquisition-date rule (run "
+                             "scripts/fetch_processing_baselines.py to record it)")
+            self._warned_baseline = True
+        return BASELINE_OFFSET_DN if obs.date_obj() >= _OFFSET_DATE_FALLBACK else 0.0
+
+    def harmonize_dn(self, raw_bands: np.ndarray, obs: Observation) -> np.ndarray:
+        """Bring baseline-04.00+ DN onto the pre-2022 scale: max(DN - 1000, 0).
+
+        Must run AFTER the validity mask, which detects nodata as DN == 0 on the raw
+        values; dark valid pixels may legitimately clip to 0 here.
+        """
+        off = self.baseline_offset(obs)
+        return np.maximum(raw_bands - off, 0.0) if off else raw_bands
+
     # -- normalization -----------------------------------------------------------
     def to_reflectance(self, raw_bands: np.ndarray) -> np.ndarray:
         return (raw_bands / self.scale).astype(np.float32)
@@ -174,7 +213,7 @@ class Preprocessor:
         """
         raw, scl = self.load_raw(obs)
         valid = self.validity_mask(raw, scl)
-        refl = self.to_reflectance(raw)
+        refl = self.to_reflectance(self.harmonize_dn(raw, obs))
         refl[:, ~valid] = 0.0
         norm = self.normalize(refl)
         return norm, valid

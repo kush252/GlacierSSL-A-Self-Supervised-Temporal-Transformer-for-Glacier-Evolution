@@ -107,3 +107,19 @@ over all valid regional tokens. Both are unit-tested (Phase 7 / `tests/test_tet.
 | Window sampler min/max length, short/med/long freq | EXPERIMENT | 2/36, uniform-ish | `sampling.window.*` |
 | Combined loss coefficients (same in all 3 files) | EXPERIMENT | 1.0/0.5/0.5 | `loss.lambda_*` |
 | Seed | FIXED (recorded) | 42 | `run.seed` |
+
+## Architecture review (Nov 2026) — see `architecture_review.md`
+Every row is switchable, so the original behaviour is one flag away for the ablation table.
+
+| Item | Tag | Value | Config key |
+|---|---|---|---|
+| Temporal firewall: Head 2 reads a time-blind TET pass (no season / elapsed / span encodings) | FIXED (bug fix; ablatable) | true | `head2.time_blind` |
+| Temporal firewall: Head 3 interval endpoints pass a time-blind TET (enforces head3 principle 4) | FIXED (bug fix; ablatable) | true | `head3.time_blind` |
+| DINO keeps the time-aware context (state *in* its sequence) | FIXED | false | `head1.time_blind` |
+| Sparse multi-year windows (fraction of windows drawn across the whole record) | EXPERIMENT | 0.5 | `sampling.window.sparse_prob` |
+| Remove S2 processing-baseline ≥ 04.00 offset (+1000 DN) per scene | FIXED (bug fix) | true | `data.harmonize_baseline` |
+| Per-scene processing baseline recorded in the manifest | FIXED | from STAC | `scripts/fetch_processing_baselines.py` |
+| Normalization stats on harmonised reflectance (old file kept for old checkpoints) | FIXED | — | `data.norm_stats_path` |
+| Pretrained ViT actually loaded (the loader existed but was never called) | EXPERIMENT | Prithvi-EO-1.0-100M | `vit.pretrained_ckpt` |
+| LR multiplier for pretrained ViT weights | EXPERIMENT | 0.1 | `vit.pretrained_lr_scale` |
+| Head 2 pairs exclude invalid (cloud/nodata) timestamps (head2 §11.5) | FIXED (bug fix) | — | — |

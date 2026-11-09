@@ -29,7 +29,7 @@ import torch
 
 from ..train.accel import amp_settings
 from .context import EvalContext
-from .extract import (build_backbones, build_loader, extract_all, run_tet,
+from .extract import (build_backbones, build_loader, extract_all, head2_key, run_tet,
                       select_sequences, usable)
 from .head2_eval import build_pairs, gather, predict_head2
 from .stats import cosine_dist_rows, l2n, mean_ci
@@ -45,13 +45,14 @@ CLOUD_LABELS = ["<5%", "5-20%", "20-50%", ">=50%"]
 OCC_FRACS = [0.1, 0.25, 0.5]
 
 
-def _tet(bb, tokens, meta, sel, device, amp):
+def _tet(bb, tokens, meta, sel, device, amp, time_blind=False):
     """TET on a subset of cached tokens; elapsed time re-measured from the subset's first
     date, exactly as a shorter input sequence would have been presented."""
     sel = np.asarray(sel)
     el = np.asarray(meta["elapsed"])[sel]
     out = run_tet(bb, tokens[torch.as_tensor(sel)].unsqueeze(0).float(),
-                  [meta["seasons"][k] for k in sel], el - el[0], device, amp)
+                  [meta["seasons"][k] for k in sel], el - el[0], device, amp,
+                  time_blind=time_blind)
     return (out["timestamp_out"][0].float().cpu().numpy(),
             out["sequence_out"][0].float().cpu().numpy())
 
@@ -102,6 +103,8 @@ def missing_and_length(ctx, head2, runs, amp):
     seq_gids = {L: [] for L in LENGTHS}
     full = {"drift": [], "mae": []}
     rng = ctx.rng(51)
+    h2key = head2_key(cfg)
+    h2blind = h2key.endswith("_blind")
 
     for gid in ctx.test.gids:
         m = ctx.test.meta[gid]
@@ -113,7 +116,7 @@ def missing_and_length(ctx, head2, runs, amp):
         F = {name: ctx.test.feats[name][gid] for name in runs}
         zf = F[prim]["timestamp_out"]
         if "student" in F:
-            full["mae"].append({"mae": _head2_mae(head2, F["student"]["timestamp_out"],
+            full["mae"].append({"mae": _head2_mae(head2, F["student"][h2key],
                                                   el, ok, dev)})
 
         def measure(sel):
@@ -126,7 +129,9 @@ def missing_and_length(ctx, head2, runs, amp):
                                                               F[name]["sequence_out"][None])[0])
                     res["seq"] = s
                 if name == "student" and head2 is not None:
-                    res["mae"] = _head2_mae(head2, z, el[sel], ok[sel], dev)
+                    zh = (_tet(bbs[name], F[name]["tokens"], m, sel, dev, amp,
+                               time_blind=True)[0] if h2blind else z)
+                    res["mae"] = _head2_mae(head2, zh, el[sel], ok[sel], dev)
             return res
 
         for p in DROP_FRACS:
@@ -199,7 +204,7 @@ def cloud_analysis(ctx, head2):
                          "seasons": m["seasons"], "usable": usable(m, cfg)})
         P = build_pairs(recs, 300, ctx.rng(61))
         if len(P["gap"]):
-            zi, zj = gather(ctx.test.feats["student"], ctx.test.gids, P, "timestamp_out")
+            zi, zj = gather(ctx.test.feats["student"], ctx.test.gids, P, head2_key(cfg))
             err = np.abs(predict_head2(head2, zi, zj, ctx.device) - P["gap"])
             cmax = np.array([max(ctx.test.meta[ctx.test.gids[g]]["cloud_pct"][a],
                                  ctx.test.meta[ctx.test.gids[g]]["cloud_pct"][b])
@@ -250,7 +255,7 @@ def occlusion_analysis(ctx, head2, amp_cfg_runs):
                                                  z_clean).mean()),
                  "usable_fraction": float(ok.mean())}
             if "student" in feats and head2 is not None:
-                r["mae"] = _head2_mae(head2, feats["student"][gid]["timestamp_out"],
+                r["mae"] = _head2_mae(head2, feats["student"][gid][head2_key(ctx.cfg)],
                                       np.asarray(m["elapsed"]), ok, ctx.device)
             per_g.append(r)
         rows.append({"condition": f"{int(f * 100)}% of each image occluded",

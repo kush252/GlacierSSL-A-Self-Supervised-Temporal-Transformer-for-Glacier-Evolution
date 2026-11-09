@@ -40,7 +40,7 @@ class GlacierBackbone(nn.Module):
 
     # -- full temporal forward ---------------------------------------------------
     def forward(self, imgs, timestamp_mask, elapsed_years, span_years, seasons,
-                region_mask=None):
+                region_mask=None, time_blind: bool = False):
         """
         imgs:           (B,T,6,H,W) padded
         timestamp_mask: (B,T) bool, True=valid (real) timestamp
@@ -49,6 +49,7 @@ class GlacierBackbone(nn.Module):
         seasons:        season ids tensor (B,T) long  OR  list[list[str]] length B.
                         A tensor is required under nn.DataParallel so it scatters per-GPU
                         in lock-step with imgs; the list form is kept for direct callers.
+        time_blind:     withhold explicit temporal metadata from the TET (see TET.forward).
         """
         regional = self.encode_regional(imgs)                     # (B,T,64,768)
         if torch.is_tensor(seasons):
@@ -56,7 +57,7 @@ class GlacierBackbone(nn.Module):
         else:
             season_ids = seasons_to_ids(seasons, imgs.shape[1], imgs.device)
         return self.tet(regional, season_ids, elapsed_years, span_years,
-                        timestamp_mask, region_mask=region_mask)
+                        timestamp_mask, region_mask=region_mask, time_blind=time_blind)
 
     # -- convenience for a single view already carrying its own T ----------------
     def forward_view(self, view: dict, elapsed_years, span_years, seasons,

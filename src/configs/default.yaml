@@ -26,8 +26,15 @@ data:
   min_valid_fraction: 0.2        # a timestamp/crop needs this valid-pixel fraction
   strict_alignment: false        # true = require pixel-identical transforms across bands
   alignment_tolerance_m: 30.0    # accepted extent drift between 10m and resampled-20m bands
+  # Remove the +1000 DN offset carried by Sentinel-2 processing baseline >= 04.00 (late
+  # 2021 onward; 33% of this dataset). Without it every glacier's series has a brightness
+  # step at the switch-over (~+1 sd in SWIR) that temporal objectives can read as "after
+  # 2022". Per-scene baselines come from scripts/fetch_processing_baselines.py.
+  harmonize_baseline: true
   manifest_path: src/artifacts/manifests/manifest.json
-  norm_stats_path: src/artifacts/normalization/train_stats.json
+  # Statistics fitted on HARMONISED reflectance. train_stats.json (unharmonised) is kept
+  # unchanged so checkpoints trained before the fix still evaluate with their own inputs.
+  norm_stats_path: src/artifacts/normalization/train_stats_harmonized.json
   image_size: 512
 
 sampling:
@@ -38,6 +45,11 @@ sampling:
     length_bucket_freq: {short: 0.34, medium: 0.33, long: 0.33}
     short_max: 6
     medium_max: 16
+    # Fraction of windows drawn SPARSELY across the whole record (sorted random subset)
+    # instead of as a contiguous run. Contiguous windows teach fine-scale/seasonal
+    # dynamics; sparse ones let Heads 2 and 3 see multi-year intervals at the same T
+    # (memory) budget. 0 = contiguous only (the original behaviour).
+    sparse_prob: 0.5
   global_scale: [0.4, 1.0]   # EXPERIMENT: crop scale range for global views
   local_scale: [0.1, 0.4]    # EXPERIMENT: crop scale range for local views
   global_crop_size: 512      # resized to ViT image size
@@ -61,7 +73,10 @@ vit:
   mlp_ratio: 4.0
   dropout: 0.0               # EXPERIMENT
   drop_path: 0.1             # EXPERIMENT
-  pretrained_ckpt: null      # EXPERIMENT
+  pretrained_ckpt: null      # EXPERIMENT: path to a ViT-B/16 checkpoint (e.g. Prithvi-EO-1.0-100M)
+  pretrained_lr_scale: 0.1   # LR multiplier for pretrained ViT weights (VIT section 7)
+  pretrained_band_indices: null  # select/reorder checkpoint input bands to B02..B12
+  pretrained_num_frames: null    # frames in a multi-frame pos_embed (auto-detected if null)
   grad_checkpoint: false     # recompute block activations in backward (identical math,
                              # ~6x less activation memory, ~30% slower). Needed on 16GB GPUs.
 
@@ -98,6 +113,9 @@ head1:
   num_global_student: 2
   num_local_student: 2
   norm_last_layer: true
+  # DINO keeps the explicit temporal context by design: it learns the STATE of a
+  # timestamp within its sequence. Set true only as an ablation of that choice.
+  time_blind: false
   # Prototype-layer gradients are cancelled for this many steps at the start of
   # training (reference DINO's freeze_last_layer, counted in steps rather than
   # epochs). Without it the prototypes can reach a degenerate configuration before
@@ -113,6 +131,11 @@ head2:
   gap_bins_years: [0.5, 1.0, 2.0, 4.0]   # EXPERIMENT (stratification edges)
   pairs_per_glacier: 4
   loss: smooth_l1            # EXPERIMENT: smooth_l1 | mae | mse (on log1p)
+  # Temporal firewall (head2_archi.md section 8, Experiment E variant 2): Head 2 reads a
+  # TET pass WITHOUT the elapsed-time/season/span encodings. Its target is the elapsed
+  # time, so with them present the head can decode the answer from its own input instead
+  # of learning visual temporal cues. false = original time-aware path (ablation).
+  time_blind: true
 
 head3:
   encoder_hidden: [1536]     # EXPERIMENT (Change Encoder capacity)
@@ -125,6 +148,12 @@ head3:
   objective: infonce         # baseline; cluster is staged
   temperature: 0.1           # EXPERIMENT
   intervals_per_glacier: 4
+  # Temporal firewall for Head 3 (head3_archi.md principle 4: "the Change Encoder
+  # receives visual features only"). The interval endpoints were passed through the TET
+  # with elapsed=[0, gap] and both seasons, which leaks the gap and season pair into the
+  # regional features; two views of one interval share them exactly, so InfoNCE can match
+  # on that fingerprint instead of on change. false = original behaviour (ablation).
+  time_blind: true
   max_gap_years: null        # EXPERIMENT (no cap)
   cluster:
     enabled: false           # EXPERIMENT (staged)

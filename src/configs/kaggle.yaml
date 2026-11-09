@@ -25,6 +25,11 @@ data:
 vit:
   grad_checkpoint: true      # REQUIRED on 16 GB. Identical math (verified bit-exact on
                              # outputs and all gradients), ~6x less activation memory.
+  # Pretrained spatial encoder: Prithvi-EO-1.0-100M (ViT-B/16, 6 HLS bands = our band
+  # order). Download it in the notebook first (needs Internet ON in notebook settings):
+  #   !wget -q -O /kaggle/working/Prithvi_EO_V1_100M.pt https://huggingface.co/ibm-nasa-geospatial/Prithvi-EO-1.0-100M/resolve/main/Prithvi_EO_V1_100M.pt
+  # Set to null to train the ViT from scratch (the original runs; an ablation row).
+  pretrained_ckpt: /kaggle/working/Prithvi_EO_V1_100M.pt
 tet:
   grad_checkpoint: true
 

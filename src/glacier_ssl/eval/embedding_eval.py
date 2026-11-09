@@ -278,7 +278,8 @@ def run(ctx: EvalContext) -> dict:
     md = [
         f"{len(ref['gid'])} usable held-out timestamps from "
         f"{len(np.unique(ref['gid']))} glaciers; `{ctx.primary}` backbone vs an untrained "
-        f"`{ctx.baseline}` baseline of the same architecture.", "",
+        f"{', '.join(f'`{b}`' for b in ctx.baselines) or 'no'} baseline(s) of the same "
+        "architecture.", "",
         "### Embedding health (collapse check)", t_health, "",
         "### Share of variance explained by each factor (eta-squared)",
         "Rows marked `| within glacier` first subtract each glacier's mean embedding, so "

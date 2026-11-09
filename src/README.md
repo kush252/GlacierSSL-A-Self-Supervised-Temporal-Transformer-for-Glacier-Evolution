@@ -62,7 +62,11 @@ both are unit-tested (`tests/test_backbone.py`).
 # 1. build the manifest from the SQLite catalog + on-disk GeoTIFFs (Phase 2)
 python src/scripts/build_manifest.py
 
-# 2. fit train-only band normalization (Phase 3)
+# 1b. record each scene's Sentinel-2 processing baseline (needed to remove the +1000 DN
+#     offset of baseline >= 04.00; see DOCS_phase0/architecture_review.md section 3B)
+python src/scripts/fetch_processing_baselines.py
+
+# 2. fit train-only band normalization (Phase 3) -- on harmonised reflectance
 python src/scripts/fit_normalization.py --max-observations 300
 
 # 3. tests — the acceptance gate (Phase 13)
@@ -139,6 +143,15 @@ the audit asserts they are the only ones. They are the terminal LayerNorm produc
 takes `regional_out` — `head3_archi.md`). The context **token** is trained; only this final
 norm is outside the loss path, and at init it is exactly standard normalization. Attaching a
 loss there would invent architecture the plan does not specify.
+
+## Architecture review (read before the next training run)
+
+[`DOCS_phase0/architecture_review.md`](DOCS_phase0/architecture_review.md) records why the
+first full run learned little and what changed: a **temporal firewall** (Heads 2/3 read a
+time-blind TET pass, so their temporal targets are not handed to them by the date
+encodings), **Sentinel-2 baseline harmonisation** (33% of scenes carried a +1000 DN
+offset), **sparse multi-year windows**, and a **pretrained ViT** (Prithvi-EO-1.0-100M; the
+loader existed but was never called). Every change is a config flag, for ablation.
 
 ## Evaluation after pretraining
 

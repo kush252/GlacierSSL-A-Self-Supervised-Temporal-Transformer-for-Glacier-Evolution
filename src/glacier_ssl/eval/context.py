@@ -27,15 +27,19 @@ class EvalContext:
     train: Optional[FeatureSet] = None  # small TRAIN subset, only for fitting control probes
     bundle: Optional[dict] = None
     seed: int = 0
-    baseline: Optional[str] = "random"  # name of the untrained-weights baseline, or None
+    # Same-architecture reference models scored by every label-free test:
+    #   "random"     -- untrained everything (is the model better than random?)
+    #   "pretrained" -- pretrained ViT, untrained HPE/TET (does glacier SSL add anything
+    #                   beyond the off-the-shelf spatial encoder it started from?)
+    baselines: list = field(default_factory=lambda: ["random"])
     max_timesteps: Optional[int] = None
     extra: dict = field(default_factory=dict)
 
     # -- helpers -----------------------------------------------------------------
     @property
     def models(self) -> list[str]:
-        """Models compared in the label-free tests: primary first, baseline second."""
-        return [self.primary] + ([self.baseline] if self.baseline else [])
+        """Models compared in the label-free tests: primary first, then the baselines."""
+        return [self.primary] + list(self.baselines)
 
     def rng(self, salt: int = 0) -> np.random.Generator:
         return np.random.default_rng(self.seed * 7919 + salt)

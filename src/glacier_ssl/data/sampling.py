@@ -122,6 +122,12 @@ class WindowSampler:
         self.medium_max = int(w.medium_max)
         freq = w.length_bucket_freq
         self.bucket_freq = (float(freq["short"]), float(freq["medium"]), float(freq["long"]))
+        # Probability that a window is a SPARSE draw across the whole record instead of a
+        # contiguous run. Window LENGTH is capped by memory, but a contiguous run of 8
+        # seasonal observations spans under two years, so the temporal heads would never
+        # see the multi-year intervals over which glacier evolution happens. Sparse windows
+        # decouple the number of timestamps from the time span they cover.
+        self.sparse_prob = float(w.get("sparse_prob", 0.0) or 0.0)
         s = config.sampling
         self.image_size = int(config.data.image_size)
         self.global_scale = tuple(s.global_scale)
@@ -161,6 +167,10 @@ class WindowSampler:
         length = self._sample_length(rng, n_obs)
         if length >= n_obs:
             return list(range(n_obs))
+        # `sparse_prob > 0` is checked first so the RNG stream (and every existing
+        # contiguous window) is unchanged when the option is off.
+        if self.sparse_prob > 0 and rng.random() < self.sparse_prob:
+            return sorted(int(i) for i in rng.choice(n_obs, size=length, replace=False))
         start = int(rng.integers(0, n_obs - length + 1))
         return list(range(start, start + length))
 

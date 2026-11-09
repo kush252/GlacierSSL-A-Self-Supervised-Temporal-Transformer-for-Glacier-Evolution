@@ -54,6 +54,10 @@ class Observation:
     scl_path: Optional[str]
     cloud_pct: Optional[float]
     crs: Optional[str] = None    # spatial reference, filled lazily if needed
+    # Sentinel-2 processing baseline ("05.10" ...), filled by
+    # scripts/fetch_processing_baselines.py. >= 04.00 means the L2A reflectance carries a
+    # +1000 DN offset that preprocessing must remove (data.harmonize_baseline).
+    processing_baseline: Optional[str] = None
 
     def date_obj(self) -> date:
         d = _parse_date(self.acquisition_date)

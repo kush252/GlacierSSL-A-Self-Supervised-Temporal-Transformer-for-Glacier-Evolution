@@ -102,8 +102,15 @@ def main() -> None:
                     help="evaluate a seeded random subset (debugging / quick looks)")
     ap.add_argument("--max-timesteps", type=int, default=None,
                     help="cap timestamps per glacier (default: all, up to 36)")
+    ap.add_argument("--baselines", default="auto",
+                    help="comma list of same-architecture references: random, pretrained "
+                         "(pretrained ViT + untrained HPE/TET). 'auto' = random, plus "
+                         "pretrained when the checkpoint was trained from a pretrained ViT")
+    ap.add_argument("--pretrained-ckpt", default=None,
+                    help="pretrained ViT file for the 'pretrained' baseline when the path "
+                         "stored in the checkpoint's config does not exist on this machine")
     ap.add_argument("--no-baseline", action="store_true",
-                    help="skip the untrained same-architecture baseline")
+                    help="skip all baselines")
     ap.add_argument("--probe-train-glaciers", type=int, default=120,
                     help="train glaciers used to fit the Head-2 control probes (0 = skip)")
     ap.add_argument("--occlusion-glaciers", type=int, default=24,
@@ -140,6 +147,8 @@ def main() -> None:
                 cfg.set(key, val)
     if args.data_root:
         cfg.set("data.data_root", None if args.data_root == "project" else args.data_root)
+    if args.pretrained_ckpt:
+        cfg.set("vit.pretrained_ckpt", args.pretrained_ckpt)
     cfg.set("eval.workers", args.workers)
     # Evaluation never needs gradient checkpointing; keep the trained architecture intact.
 
@@ -151,13 +160,22 @@ def main() -> None:
     if "head2" in wanted or "robustness" in wanted:
         if "student" not in models:
             models.append("student")
-    if not args.no_baseline:
-        models.append("random")
+    if args.no_baseline:
+        baselines = []
+    elif args.baselines == "auto":
+        baselines = ["random"] + (["pretrained"] if cfg.get("vit.pretrained_ckpt") else [])
+    else:
+        baselines = [b.strip() for b in args.baselines.split(",") if b.strip()]
+    bad = [b for b in baselines if b not in ("random", "pretrained")]
+    if bad:
+        ap.error(f"unknown baseline(s): {bad}")
+    models += baselines
     # Each unused backbone state dict is ~0.7 GB for this architecture; drop them now so
     # they are not carried alongside the instantiated models.
     for unused in {"student", "teacher"} - set(models):
         bundle.pop(unused, None)
-    keep_tokens = {m for m in models if m != "random"} if "robustness" in wanted else False
+    keep_tokens = ({m for m in models if m not in baselines} if "robustness" in wanted
+                   else False)
 
     cache_dirs = [Path(args.reuse_cache)] if args.reuse_cache else []
     store = ResultsStore(out_root, run_name, manifest={
@@ -198,7 +216,7 @@ def main() -> None:
     ctx = context.EvalContext(
         cfg=cfg, store=store, device=device, project_root=project_root,
         primary=args.backbone, test=test_fs, train=train_fs, bundle=bundle,
-        seed=args.seed, baseline=None if args.no_baseline else "random",
+        seed=args.seed, baselines=baselines,
         max_timesteps=cap, extra={"occlusion_glaciers": args.occlusion_glaciers})
 
     # ---- tests (one failing test must not lose the others) -----------------------

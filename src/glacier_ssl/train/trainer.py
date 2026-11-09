@@ -26,6 +26,7 @@ import torch
 import torch.nn as nn
 
 from ..backbone.backbone import GlacierBackbone
+from ..backbone.vit import load_pretrained
 from ..backbone.tet import seasons_to_ids
 from ..config import Config
 from ..heads.head1_dino import Head1DINO
@@ -56,6 +57,13 @@ class SSLTrainer:
 
         # Base modules (own the parameters; used for EMA, optimizer, checkpointing).
         self.student = GlacierBackbone(config).to(self.device)
+        # Pretrained spatial encoder (VIT_aarchi.md section 7). Loaded into the student
+        # BEFORE the teacher copies it, so both start from the same pretrained weights.
+        self.pretrained_report = None
+        pretrained = config.get("vit.pretrained_ckpt", None)
+        if pretrained:
+            self.pretrained_report = load_pretrained(self.student.vit, str(pretrained),
+                                                     config)
         self.teacher = GlacierBackbone(config).to(self.device)
         self.teacher.load_state_dict(self.student.state_dict())
         for p in self.teacher.parameters():
@@ -87,8 +95,23 @@ class SSLTrainer:
                   + list(self.head1.student_head.parameters())
                   + list(self.head2.parameters())
                   + list(self.head3.parameters()))
-        self.optimizer = torch.optim.AdamW(
-            params, lr=float(config.train.lr), weight_decay=float(config.train.weight_decay))
+        base_lr, wd = float(config.train.lr), float(config.train.weight_decay)
+        vit_scale = (float(config.get("vit.pretrained_lr_scale", 0.1))
+                     if self.pretrained_report is not None else 1.0)
+        if vit_scale == 1.0:
+            # One group: identical to the original optimizer, so older checkpoints resume.
+            groups = [{"params": params, "lr": base_lr, "lr_scale": 1.0}]
+        else:
+            # Pretrained spatial weights move slower than the freshly initialised HPE, TET
+            # and heads (VIT_aarchi.md section 7), so pretraining is not overwritten early.
+            vit_ids = {id(p) for p in self.student.vit.parameters()}
+            groups = [
+                {"params": [p for p in params if id(p) not in vit_ids],
+                 "lr": base_lr, "lr_scale": 1.0},
+                {"params": [p for p in params if id(p) in vit_ids],
+                 "lr": base_lr * vit_scale, "lr_scale": vit_scale},
+            ]
+        self.optimizer = torch.optim.AdamW(groups, lr=base_lr, weight_decay=wd)
         self.grad_clip = float(config.train.grad_clip)
         self.base_lr = float(config.train.lr)
         self.warmup_steps = int(config.get("train.warmup_steps", 0))
@@ -98,6 +121,12 @@ class SSLTrainer:
         self.lambda_distance = float(config.loss.lambda_distance)
         self.lambda_change = float(config.loss.lambda_change)
         self.n_global = int(config.head1.num_global_teacher)
+        # Temporal firewall: heads whose target is a temporal quantity read a time-blind
+        # TET pass, so the answer is not handed to them through the elapsed-time/season
+        # encodings. Absent keys (older configs) keep the original time-aware behaviour.
+        self.blind_h1 = bool(config.get("head1.time_blind", False))
+        self.blind_h2 = bool(config.get("head2.time_blind", False))
+        self.blind_h3 = bool(config.get("head3.time_blind", False))
         # Uniform output over K prototypes gives a DINO loss of exactly log(K). A loss
         # pinned there means the backbone emits a constant embedding regardless of input
         # (representational collapse); training never recovers on its own.
@@ -123,7 +152,8 @@ class SSLTrainer:
         for v, vw in enumerate(views):
             img = vw["img"].to(self.device, non_blocking=True)
             tmask = vw["timestamp_mask"].to(self.device)
-            out = self._student_fwd(img, tmask, elapsed, span, season_ids)
+            out = self._student_fwd(img, tmask, elapsed, span, season_ids,
+                                    time_blind=self.blind_h1)
             ts = out["timestamp_out"]                           # (B,T,D)
             B, T, D = ts.shape
             logits = self.head1.student_head(ts.reshape(B * T, D))
@@ -139,7 +169,8 @@ class SSLTrainer:
                 vw = views[v]
                 img = vw["img"].to(self.device, non_blocking=True)
                 tmask = vw["timestamp_mask"].to(self.device)
-                out = self._teacher_fwd(img, tmask, elapsed, span, season_ids)
+                out = self._teacher_fwd(img, tmask, elapsed, span, season_ids,
+                                        time_blind=self.blind_h1)
                 ts = out["timestamp_out"]
                 B, T, D = ts.shape
                 logits = self.head1.teacher_head(ts.reshape(B * T, D))
@@ -161,6 +192,14 @@ class SSLTrainer:
             return z.sum() * 0.0, {"n_pairs": 0}
         ts = base_out["timestamp_out"]                          # (B,T,D)
         elapsed = batch["elapsed_years"]                        # (B,T) dates-derived (CPU ok)
+        # head2_archi.md section 11.5: invalid timestamps (mostly cloud/nodata) must not
+        # enter a pair; the sampler draws over every observation in the window.
+        valid = batch.get("base_valid")
+        if valid is not None:
+            pairs = [(b, i, j) for (b, i, j) in pairs
+                     if bool(valid[b, i]) and bool(valid[b, j])]
+        if not pairs:
+            return ts.sum() * 0.0, {"n_pairs": 0}
         zi, zj, targets = [], [], []
         for (b, i, j) in pairs:
             zi.append(ts[b, i]); zj.append(ts[b, j])
@@ -190,7 +229,8 @@ class SSLTrainer:
             span = gaps
             seasons = [[iv["season_i"], iv["season_j"]] for iv in usable]
             season_ids = seasons_to_ids(seasons, 2, self.device)
-            out = self._student_fwd(imgs, tmask, elapsed, span, season_ids)
+            out = self._student_fwd(imgs, tmask, elapsed, span, season_ids,
+                                    time_blind=self.blind_h3)
             reg = out["regional_out"]                           # (N,2,64,D)
             return reg[:, 0], reg[:, 1]
 
@@ -215,7 +255,8 @@ class SSLTrainer:
             # base-view backbone pass (shared by Head 2); kept with grad.
             base_out = self._student_fwd(
                 batch["base"].to(self.device, non_blocking=True),
-                batch["timestamp_mask"].to(self.device), elapsed, span, season_ids)
+                batch["timestamp_mask"].to(self.device), elapsed, span, season_ids,
+                time_blind=self.blind_h2)
 
             logs = {}
             l_dino, m1 = self._dino_loss(batch, elapsed, span, season_ids); logs.update(m1)
@@ -250,7 +291,7 @@ class SSLTrainer:
             return self.base_lr
         lr = self.base_lr * min(1.0, (step + 1) / self.warmup_steps)
         for group in self.optimizer.param_groups:
-            group["lr"] = lr
+            group["lr"] = lr * group.get("lr_scale", 1.0)
         return lr
 
     def _freeze_prototypes(self, step: int) -> None:

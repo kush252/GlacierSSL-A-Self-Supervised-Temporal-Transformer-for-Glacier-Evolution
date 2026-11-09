@@ -55,7 +55,7 @@ class NormalizationFitter:
                 self.log.warning("skip %s: %s", obs.glims_id, exc)
                 continue
             valid = self.pre.validity_mask(raw, scl)
-            refl = self.pre.to_reflectance(raw)
+            refl = self.pre.to_reflectance(self.pre.harmonize_dn(raw, obs))
             if valid.sum() == 0:
                 continue
             for i in range(len(self.bands)):
