@@ -1,0 +1,233 @@
+{
+  "checkpoint": {
+    "path": "src\\output\\ckpt_latest.pt",
+    "step": 6720,
+    "epoch": 19,
+    "size_mb": 3041.3,
+    "modified": "2026-11-09T10:16:09"
+  },
+  "args": {
+    "ckpt": "src/output/ckpt_latest.pt",
+    "config": null,
+    "split": "test",
+    "tests": "all",
+    "backbone": "student",
+    "device": "cpu",
+    "data_root": "project",
+    "threads": 12,
+    "workers": 0,
+    "out_root": null,
+    "name": "full",
+    "limit_glaciers": 40,
+    "max_timesteps": null,
+    "no_baseline": false,
+    "probe_train_glaciers": 14,
+    "occlusion_glaciers": 5,
+    "reuse_cache": null,
+    "zip": true,
+    "seed": 0
+  },
+  "tests": [
+    "head2",
+    "embedding",
+    "trajectory",
+    "retrieval",
+    "robustness"
+  ],
+  "models": [
+    "student",
+    "random"
+  ],
+  "git": {
+    "available": true,
+    "commit": "0d0ce6d93f3aff56c8431dcddd65ff81a2214030",
+    "dirty": true
+  },
+  "torch": "2.12.1+cpu",
+  "device": "cpu",
+  "gpus": [],
+  "config": {
+    "run": {
+      "seed": 42,
+      "device": "cuda",
+      "output_root": "/kaggle/working/runs",
+      "log_level": "INFO"
+    },
+    "data": {
+      "sqlite_path": "glacier_dataset.sqlite3",
+      "dataset_root": "new_pipeline_dataset",
+      "data_root": null,
+      "band_order": [
+        "B02",
+        "B03",
+        "B04",
+        "B08",
+        "B11",
+        "B12"
+      ],
+      "scl_band": "SCL",
+      "reflectance_scale": 10000.0,
+      "split_source": "db",
+      "scl_invalid_classes": [
+        0,
+        1,
+        3,
+        8,
+        9,
+        10
+      ],
+      "min_valid_fraction": 0.2,
+      "strict_alignment": false,
+      "alignment_tolerance_m": 30.0,
+      "manifest_path": "src/artifacts/manifests/manifest.json",
+      "norm_stats_path": "src/artifacts/normalization/train_stats.json",
+      "image_size": 512
+    },
+    "sampling": {
+      "window": {
+        "min_length": 2,
+        "max_length": 8,
+        "length_bucket_freq": {
+          "short": 0.34,
+          "medium": 0.33,
+          "long": 0.33
+        },
+        "short_max": 4,
+        "medium_max": 8
+      },
+      "global_scale": [
+        0.4,
+        1.0
+      ],
+      "local_scale": [
+        0.1,
+        0.4
+      ],
+      "global_crop_size": 512,
+      "local_crop_size": 512,
+      "augmentation": {
+        "hflip_prob": 0.5,
+        "vflip_prob": 0.5,
+        "rot90_prob": 0.5,
+        "radiometric": {
+          "brightness": 0.1,
+          "gaussian_noise_std": 0.01
+        },
+        "enabled": true
+      }
+    },
+    "vit": {
+      "image_size": 512,
+      "patch_size": 16,
+      "in_chans": 6,
+      "embed_dim": 768,
+      "depth": 12,
+      "num_heads": 12,
+      "mlp_ratio": 4.0,
+      "dropout": 0.0,
+      "drop_path": 0.1,
+      "pretrained_ckpt": null,
+      "grad_checkpoint": true
+    },
+    "hpe": {
+      "embed_dim": 768,
+      "input_grid": 32,
+      "num_merge_stages": 2,
+      "dropout": 0.0
+    },
+    "tet": {
+      "embed_dim": 768,
+      "depth": 8,
+      "num_heads": 12,
+      "mlp_ratio": 4.0,
+      "mlp_dropout": 0.1,
+      "attn_dropout": 0.1,
+      "num_regions": 64,
+      "time_encoding": "sinusoidal",
+      "span_encoding": "sinusoidal",
+      "context_mode": "broadcast_mean",
+      "relative_temporal_bias": false,
+      "grad_checkpoint": true
+    },
+    "head1": {
+      "hidden_dim": 2048,
+      "bottleneck_dim": 1024,
+      "num_prototypes": 8192,
+      "student_temp": 0.1,
+      "teacher_temp": 0.04,
+      "center_momentum": 0.9,
+      "ema_momentum_start": 0.996,
+      "ema_momentum_end": 0.9999,
+      "num_global_teacher": 2,
+      "num_global_student": 2,
+      "num_local_student": 2,
+      "norm_last_layer": true,
+      "freeze_last_layer_steps": 336
+    },
+    "head2": {
+      "mlp_hidden": [
+        512,
+        128
+      ],
+      "dropout": 0.1,
+      "l2_normalize": false,
+      "pair_sampling": "gap_stratified",
+      "gap_bins_years": [
+        0.5,
+        1.0,
+        2.0,
+        4.0
+      ],
+      "pairs_per_glacier": 4,
+      "loss": "smooth_l1"
+    },
+    "head3": {
+      "encoder_hidden": [
+        1536
+      ],
+      "encoder_out": 768,
+      "proj_dim": 256,
+      "proj_hidden": 512,
+      "dropout": 0.1,
+      "pair_features": "five_group",
+      "pooling": "mean",
+      "objective": "infonce",
+      "temperature": 0.1,
+      "intervals_per_glacier": 4,
+      "max_gap_years": null,
+      "cluster": {
+        "enabled": false,
+        "num_prototypes": 64,
+        "weight": 0.5,
+        "refresh_every": 1
+      },
+      "composition": {
+        "enabled": false
+      }
+    },
+    "loss": {
+      "lambda_dino": 1.0,
+      "lambda_distance": 0.5,
+      "lambda_change": 0.5
+    },
+    "train": {
+      "batch_size": 2,
+      "num_workers": 2,
+      "epochs": 20,
+      "lr": 0.0002,
+      "weight_decay": 0.04,
+      "grad_clip": 3.0,
+      "warmup_steps": 500,
+      "log_every": 5,
+      "ckpt_every": 0,
+      "amp": true,
+      "amp_dtype": "float16",
+      "data_parallel": "auto",
+      "pin_memory": "auto",
+      "tf32": true
+    },
+    "eval": {
+      "workers": 0
+    }
+  }
+}

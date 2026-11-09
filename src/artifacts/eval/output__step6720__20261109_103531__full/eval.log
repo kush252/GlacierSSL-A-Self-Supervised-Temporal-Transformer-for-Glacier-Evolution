@@ -1,0 +1,6 @@
+2026-11-09 10:35:31,516 | INFO    | results -> D:\Kush\2nd Year\projects\glacier\implementation\src\artifacts\eval\output__step6720__20261109_103531__full
+2026-11-09 10:35:32,275 | INFO    | extracting ['student', 'random'] for 40 glaciers (test split) ...
+2026-11-09 10:50:34,543 | INFO    | extracted 5/40 glaciers (178.9s each, ~104 min left)
+2026-11-09 11:04:27,713 | INFO    | extracted 10/40 glaciers (172.8s each, ~86 min left)
+2026-11-09 11:16:02,337 | INFO    | extracted 15/40 glaciers (161.5s each, ~67 min left)
+2026-11-09 11:27:19,095 | INFO    | extracted 20/40 glaciers (155.0s each, ~52 min left)
