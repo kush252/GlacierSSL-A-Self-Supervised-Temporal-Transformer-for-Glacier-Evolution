@@ -140,6 +140,40 @@ takes `regional_out` — `head3_archi.md`). The context **token** is trained; on
 norm is outside the loss path, and at init it is exactly standard normalization. Attaching a
 loss there would invent architecture the plan does not specify.
 
+## Evaluation after pretraining
+
+`src/scripts/evaluate.py` runs the label-free evaluation suite on **held-out glaciers**
+(library code in `glacier_ssl/eval/`, tests in `tests/test_eval.py`):
+
+```bash
+python src/scripts/evaluate.py --ckpt <runs/<run>/ckpt_latest.pt> --device cuda --zip
+```
+
+| Test | Question | Module |
+|------|----------|--------|
+| `head2` | Head 2 error in years, calibration, per-gap MAE, pair-order invariance, metadata-only and visual-only controls (head2_archi.md §8) | `eval/head2_eval.py` |
+| `embedding` | do features organise by season / region / size / latitude / year? health, probes, t-SNE | `eval/embedding_eval.py` |
+| `trajectory` | does a glacier's embedding move smoothly and track scene change? | `eval/trajectory_eval.py` |
+| `retrieval` | nearest-neighbour identity and same-state retrieval vs untrained + raw-pixel baselines | `eval/retrieval_eval.py` |
+| `robustness` | missing timestamps, short sequences, observed + simulated cloud cover | `eval/robustness_eval.py` |
+
+Every test also scores an **untrained same-architecture baseline** (`--no-baseline` to skip).
+Useful flags: `--tests head2,retrieval`, `--backbone teacher`, `--limit-glaciers 20` (quick
+look), `--occlusion-glaciers 0` (skip the only image-rereading robustness part),
+`--reuse-cache <earlier run>/cache` (skip re-extraction).
+
+**Where results go.** One folder per run under `src/artifacts/eval/` (on Kaggle:
+`/kaggle/working/eval_results/`): `REPORT.md`, `summary.json`, `run_manifest.json`
+(checkpoint, config, seed, git, args), `eval.log`, one sub-folder per test with tables
+(`.csv` + `.md`) and figures (`.png` + `.pdf`), and a `cache/` of extracted features
+(large; not committed). `results_index.jsonl` in the same root accumulates one headline
+line per (run, test) so checkpoints and ablations can be compared later.
+
+The feature extraction runs the backbone once per glacier; the robustness test then
+re-runs only the temporal transformer on dropped/truncated timestamps (exact, because
+ViT+HPE act per timestamp). The manifest has no elevation, so size and latitude are the
+physical covariates used.
+
 ## Kaggle flow (2× T4)
 
 **1. Upload the code as a small second dataset.** Zip `src/` excluding caches and the

@@ -31,8 +31,11 @@ def distance_regression_metrics(pred_years, target_years, gap_edges=(0.5, 1, 2, 
 def _spearman(a, b):
     if len(a) < 2:
         return float("nan")
-    ra = np.argsort(np.argsort(a))
-    rb = np.argsort(np.argsort(b))
+    # average ranks: gaps and ids are heavily tied, argsort-of-argsort would break ties
+    # arbitrarily and bias rho.
+    from scipy.stats import rankdata
+    ra = rankdata(a)
+    rb = rankdata(b)
     ra = ra - ra.mean(); rb = rb - rb.mean()
     denom = np.sqrt((ra ** 2).sum() * (rb ** 2).sum())
     return float((ra * rb).sum() / denom) if denom > 0 else float("nan")

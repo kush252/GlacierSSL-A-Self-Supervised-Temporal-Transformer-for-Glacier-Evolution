@@ -29,3 +29,10 @@ pipelines/evolution/temp_dataset/
 .DS_Store
 Thumbs.db
 *.zip
+
+# Downloaded training checkpoints (~3 GB each)
+src/output/
+
+# Evaluation feature caches (large, regenerable); results themselves are kept
+src/artifacts/eval/**/cache/
+src/artifacts/eval/*.zip

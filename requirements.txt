@@ -12,3 +12,4 @@ stackstac
 pillow
 tenacity
 PyYAML
+scikit-learn   # evaluation suite: probes, t-SNE, ridge controls
