@@ -15,8 +15,11 @@ physical covariates; elevation would need a DEM join.
 """
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import torch
+from sklearn.exceptions import ConvergenceWarning
 
 from .context import SEASON_ID, EvalContext
 from .extract import usable
@@ -27,6 +30,7 @@ from ..utils.logging_utils import get_logger
 log = get_logger("eval")
 
 PROBE_MAX_ROWS = 3000
+PROBE_MAX_ITER = 2000
 TSNE_MAX_ROWS = 2500
 MIN_REGION_GLACIERS = 8
 
@@ -139,6 +143,7 @@ def probe(X, y, groups, seed: int, n_splits: int = 5) -> dict:
         sel = rng.choice(len(y), PROBE_MAX_ROWS, replace=False)
         X, y, groups = X[sel], y[sel], groups[sel]
     pred = np.full(len(y), -1)
+    unconverged = 0
     for tr, te in GroupKFold(n_splits=min(n_splits, n_groups)).split(X, y, groups):
         if len(np.unique(y[tr])) < 2:
             pred[te] = y[tr][0]
@@ -146,13 +151,19 @@ def probe(X, y, groups, seed: int, n_splits: int = 5) -> dict:
         clf = make_pipeline(
             StandardScaler(),
             PCA(n_components=min(128, X.shape[1], len(tr) - 1), random_state=seed),
-            LogisticRegression(max_iter=300, C=1.0))
-        clf.fit(X[tr], y[tr])
+            LogisticRegression(max_iter=PROBE_MAX_ITER, C=1.0))
+        # Many-class probes (year, region) can need more lbfgs iterations than the default.
+        # Count non-converged folds into the result instead of flooding the log.
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", ConvergenceWarning)
+            clf.fit(X[tr], y[tr])
+        unconverged += any(issubclass(w.category, ConvergenceWarning) for w in caught)
         pred[te] = clf.predict(X[te])
     majority = np.bincount(y).max() / len(y)
     return {"acc": float(accuracy_score(y, pred)),
             "bal_acc": float(balanced_accuracy_score(y, pred)),
-            "chance": float(majority), "n_classes": int(len(classes)), "n": int(len(y))}
+            "chance": float(majority), "n_classes": int(len(classes)), "n": int(len(y)),
+            "unconverged_folds": int(unconverged)}
 
 
 def health(X: np.ndarray, rng) -> dict:

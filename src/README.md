@@ -337,9 +337,32 @@ the notebook's side panel, then check the step printed by the resume log.
     --device cuda --workers 4 --name full36 --zip
 ```
 
-Results land in `/kaggle/working/eval_results/`. Delete the `cache/` folders inside it, then
-publish it as a dataset the same way as the checkpoints (e.g. `<username>/glacier-ssl-eval`).
-To keep them in git, copy each run folder into `src/artifacts/eval/` locally and commit.
+Results land in `/kaggle/working/eval_results/`: one `<run>/` folder per run plus, with
+`--zip`, a `<run>.zip` next to it (without the feature cache). Publish **only the zips and
+the index** from a separate folder. Uploading `eval_results/` itself with `--dir-mode zip`
+makes Kaggle zip each `<run>/` into a second `<run>.zip`, and the upload fails with
+*"Path must be unique"*.
+
+```python
+import json, pathlib, shutil
+src = pathlib.Path('/kaggle/working/eval_results')
+up = pathlib.Path('/kaggle/working/eval_upload')
+shutil.rmtree(up, ignore_errors=True); up.mkdir()
+for z in src.glob('*.zip'):
+    shutil.copy2(z, up)
+shutil.copy2(src / 'results_index.jsonl', up)
+(up / 'dataset-metadata.json').write_text(json.dumps({
+    "title": "glacier-ssl-eval", "id": "<username>/glacier-ssl-eval",
+    "licenses": [{"name": "CC0-1.0"}]}, indent=2))
+!kaggle datasets status <username>/glacier-ssl-eval        # "not found" -> create, else version
+!kaggle datasets create -p /kaggle/working/eval_upload      # first time
+# !kaggle datasets version -p /kaggle/working/eval_upload -m "<what changed>"   # later
+```
+
+A new version **replaces** the dataset's files. To keep earlier runs, attach the dataset
+as an input and copy its files into `eval_upload/` before versioning.
+
+To keep results in git, unzip each run into `src/artifacts/eval/` locally and commit.
 
 ## Uploading the dataset to Kaggle (name sanitization)
 
