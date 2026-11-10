@@ -153,6 +153,22 @@ encodings), **Sentinel-2 baseline harmonisation** (33% of scenes carried a +1000
 offset), **sparse multi-year windows**, and a **pretrained ViT** (Prithvi-EO-1.0-100M; the
 loader existed but was never called). Every change is a config flag, for ablation.
 
+The evidence comes from the first evaluation run, committed at
+[`artifacts/eval/output__step6720__20261109_103531__full/`](artifacts/eval/output__step6720__20261109_103531__full)
+(start with its `REPORT.md`; 40 held-out glaciers, original checkpoint at step 6720).
+
+**Consequences for the next run:**
+
+- **Train from scratch, never `--resume` an older checkpoint.** The input normalisation,
+  the ViT's starting weights and the optimizer's parameter groups have all changed.
+- **Download Prithvi first.** `configs/kaggle.yaml` expects it at
+  `/kaggle/working/Prithvi_EO_V1_100M.pt` (step 3 of the Kaggle flow below).
+- **Head 2's loss will stay far above the old ~0.015.** That is intended: the answer is no
+  longer in its input.
+- **Old checkpoints still evaluate exactly as they were trained.** Their stored config
+  predates these keys, so they fall back to no harmonisation, the old normalisation
+  statistics, and a time-aware Head 2.
+
 ## Evaluation after pretraining
 
 `src/scripts/evaluate.py` runs the label-free evaluation suite on **held-out glaciers**
@@ -170,7 +186,18 @@ python src/scripts/evaluate.py --ckpt <runs/<run>/ckpt_latest.pt> --device cuda 
 | `retrieval` | nearest-neighbour identity and same-state retrieval vs untrained + raw-pixel baselines | `eval/retrieval_eval.py` |
 | `robustness` | missing timestamps, short sequences, observed + simulated cloud cover | `eval/robustness_eval.py` |
 
-Every test also scores an **untrained same-architecture baseline** (`--no-baseline` to skip).
+Every test also scores same-architecture **baselines** (`--baselines auto`, the default):
+
+- **`random`**: everything untrained. Asks whether the model beats random weights.
+- **`pretrained`**: the pretrained ViT (Prithvi) with an untrained HPE/TET. Asks whether
+  glacier SSL adds anything beyond the off-the-shelf encoder it started from. Added
+  automatically when the config sets `vit.pretrained_ckpt`; `--pretrained-ckpt <path>`
+  overrides the file.
+
+`--baselines random` picks a subset; `--no-baseline` skips them all. When the checkpoint was
+trained with `head2.time_blind`, the Head 2 tests read the time-blind features
+(`timestamp_out_blind`), the same path the head was trained on.
+
 Useful flags: `--tests head2,retrieval`, `--backbone teacher`, `--limit-glaciers 20` (quick
 look), `--occlusion-glaciers 0` (skip the only image-rereading robustness part),
 `--reuse-cache <earlier run>/cache` (skip re-extraction).
@@ -189,42 +216,81 @@ physical covariates used.
 
 ## Kaggle flow (2× T4)
 
-**1. Upload the code as a small second dataset.** Zip `src/` excluding caches and the
-manifest backup (~35 MB, mostly `manifest.json`):
+Notebook settings: **GPU T4 ×2**, **Internet ON** (needed for `git` and the Prithvi
+download). Attach the imagery dataset as an input. The code comes from GitHub; the
+repository root is this `implementation/` folder.
 
-```bash
-python -c "import shutil; shutil.make_archive('glacier-ssl-code','zip','src')"
-```
-
-Create a Kaggle Dataset from that zip (slug e.g. `glacier-ssl-code`). The imagery dataset
-is separate — add both as notebook inputs.
-
-**2. Point the config at the data.** `src/configs/kaggle.yaml` holds the GPU settings;
-only `data.data_root` needs the real slug. The manifest stores *relative* paths beginning
-`new_pipeline_dataset/`, and the uploaded zip expands to `<slug>/new_pipeline_dataset/…`,
-so `data_root` is the dataset **root**, not the inner folder:
+**1. Get the code.**
 
 ```python
-import shutil, yaml, pathlib, glob
-shutil.unpack_archive('/kaggle/input/glacier-ssl-code/glacier-ssl-code.zip', '/kaggle/working/src')
-root = pathlib.Path(glob.glob('/kaggle/input/*/new_pipeline_dataset')[0]).parent  # auto-detect
-cfg = pathlib.Path('/kaggle/working/src/configs/kaggle.yaml')
-d = yaml.safe_load(cfg.read_text()); d['data']['data_root'] = str(root)
-cfg.write_text(yaml.safe_dump(d)); print('data_root =', root)
+# first session
+!git clone https://github.com/kush252/GlacierSSL-A-Self-Supervised-Temporal-Transformer-for-Glacier-Evolution.git /kaggle/working/glacier
+# later sessions
+!cd /kaggle/working/glacier && git pull
 ```
 
-**3. Audit, then train.** Always run the audit first — it costs under a minute and catches a
-broken mount or a bad config before you burn GPU quota:
+If `git pull` refuses after history on GitHub was rewritten, use
+`git fetch && git reset --hard origin/main` instead. The clone holds no local work.
+
+**2. Point the config at the data (Cell 2).** `src/configs/kaggle.yaml` holds the GPU
+settings; only `data.data_root` needs the real path. The manifest stores *relative* paths
+beginning `new_pipeline_dataset/`, so `data_root` is the folder that **contains**
+`new_pipeline_dataset/`, not the inner folder. The patched copy is written *outside* the
+repo so `git pull` never conflicts with it. Re-run this cell after every `git pull`:
 
 ```python
-!cd /kaggle/working && python src/scripts/verify_system.py --device cuda
-!cd /kaggle/working && python src/scripts/train.py --config src/configs/kaggle.yaml --device cuda
+import glob, yaml, pathlib
+
+hits = []
+for d in range(6):
+    hits = glob.glob('/kaggle/input/' + '*/' * d + 'new_pipeline_dataset')
+    if hits:
+        break
+assert hits, f"dataset not found: {glob.glob('/kaggle/input/*')}"
+data_root = str(pathlib.Path(hits[0]).parent)
+
+base = yaml.safe_load(pathlib.Path('/kaggle/working/glacier/src/configs/kaggle.yaml').read_text())
+base['data']['data_root'] = data_root
+local = pathlib.Path('/kaggle/working/kaggle_local.yaml')
+local.write_text(yaml.safe_dump(base))
+print('data_root =', data_root)
 ```
 
-The log should print `CUDA available: 2 GPU(s)` and `DataParallel enabled across 2 GPUs`.
-Smoke-test with `--limit-glaciers 20 --epochs 1` before the real run.
+**3. Download the pretrained ViT** (Prithvi-EO-1.0-100M, about 450 MB, once per session):
 
-**4. Memory tuning — the part that actually bites.** One step runs the student backbone
+```python
+!wget -q -O /kaggle/working/Prithvi_EO_V1_100M.pt https://huggingface.co/ibm-nasa-geospatial/Prithvi-EO-1.0-100M/resolve/main/Prithvi_EO_V1_100M.pt
+!ls -la /kaggle/working/Prithvi_EO_V1_100M.pt
+```
+
+If the file is missing, training stops with an error rather than silently starting the
+ViT from scratch. To train from scratch on purpose (an ablation row), set
+`vit.pretrained_ckpt: null` in Cell 2.
+
+**4. Audit, then train.** Always run the audit first. It takes under a minute and catches a
+broken mount or a bad config before you spend GPU quota:
+
+```python
+import os; os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+!cd /kaggle/working/glacier && python src/scripts/verify_system.py --device cuda
+# smoke test
+!cd /kaggle/working/glacier && python src/scripts/train.py --config /kaggle/working/kaggle_local.yaml \
+    --device cuda --limit-glaciers 20 --epochs 1
+# full run (start from an empty output folder: rm -rf /kaggle/working/runs)
+!cd /kaggle/working/glacier && python src/scripts/train.py \
+    --config /kaggle/working/kaggle_local.yaml --device cuda --epochs 20
+# continue a run of the SAME configuration in a later session
+!cd /kaggle/working/glacier && python src/scripts/train.py \
+    --config /kaggle/working/kaggle_local.yaml --device cuda --epochs 20 \
+    --resume /kaggle/input/glacier-ssl-checkpoints/ckpt_latest.pt
+```
+
+The log should print:
+- `CUDA available: 2 GPU(s)`
+- `DataParallel enabled across 2 GPUs`
+- `Pretrained ViT from /kaggle/working/Prithvi_EO_V1_100M.pt: N/N tensors loaded, 0 still fresh.`
+
+**5. Memory tuning — the part that actually bites.** One step runs the student backbone
 **seven times with gradients retained** (1 base + 4 DINO student views + 2 Head-3 interval
 views), and every call's activations stay alive until backward, so peak memory is their
 **sum**, not the largest one. Cost scales as `7 × batch_size × window_length`
@@ -243,23 +309,37 @@ does), `max_length: 8` fits comfortably — raise toward 12–16 until you OOM, 
 one notch. Keep `batch_size` even so both T4s are fed. Audit section M re-proves the
 bit-exactness on every run.
 
-**5. Persist checkpoints — `/kaggle/working` is wiped when the session ends.** `output_root`
+**6. Persist checkpoints — `/kaggle/working` is wiped when the session ends.** `output_root`
 is `/kaggle/working/runs`, which is ephemeral. Before the session dies, push the run to a
 permanent Kaggle Dataset:
 
 ```python
 import json, pathlib
-out = pathlib.Path('/kaggle/working/runs'); 
+out = pathlib.Path('/kaggle/working/runs')
 (out/'dataset-metadata.json').write_text(json.dumps(
     {"title": "glacier-ssl-checkpoints", "id": "<username>/glacier-ssl-checkpoints",
      "licenses": [{"name": "CC0-1.0"}]}))
-!kaggle datasets create -p /kaggle/working/runs      # first time
-# !kaggle datasets version -p /kaggle/working/runs -m "epoch 20"   # later runs
+!kaggle datasets create -p /kaggle/working/runs --dir-mode zip      # first time
+# !kaggle datasets version -p /kaggle/working/runs -m "epoch 20" --dir-mode zip   # later
 ```
 
-Then add that dataset as an input next session and resume from
-`/kaggle/input/glacier-ssl-checkpoints/ckpt_epoch*.pt` via `train/checkpoint.py`. With a
-12-hour session cap, plan on `ckpt_every: 1` and resuming across sessions.
+Next session, attach that dataset as an input and resume from
+`/kaggle/input/glacier-ssl-checkpoints/ckpt_latest.pt` (step 4). Kaggle pins the dataset
+**version** a notebook was attached with. After pushing a new version, update the input in
+the notebook's side panel, then check the step printed by the resume log.
+
+**7. Evaluate and save the results.**
+
+```python
+!python /kaggle/working/glacier/src/scripts/evaluate.py \
+    --ckpt /kaggle/working/runs/<run>/ckpt_latest.pt \
+    --config /kaggle/working/kaggle_local.yaml \
+    --device cuda --workers 4 --name full36 --zip
+```
+
+Results land in `/kaggle/working/eval_results/`. Delete the `cache/` folders inside it, then
+publish it as a dataset the same way as the checkpoints (e.g. `<username>/glacier-ssl-eval`).
+To keep them in git, copy each run folder into `src/artifacts/eval/` locally and commit.
 
 ## Uploading the dataset to Kaggle (name sanitization)
 
@@ -291,10 +371,29 @@ pair/interval is generated (no leakage). 10m and resampled-20m bands co-register
 ~1 pixel; the alignment check tolerates that (`data.alignment_tolerance_m`) and requires
 identical shape+CRS.
 
+## What is and is not in git
+
+Kept in git: code, configs, the manifest, normalisation statistics, evaluation results
+(`artifacts/eval/<run>/`), and the event-labelling pipeline with its labels and figures
+(`../pipelines/event_labeling/`, which has its own README).
+
+Ignored because they are large and can be regenerated (`.gitignore`):
+
+| Path | What | Regenerate with |
+|---|---|---|
+| `src/output/` | training checkpoints, about 3 GB each | training; keep them in a Kaggle dataset |
+| `src/artifacts/eval/**/cache/` | extracted features per eval run | `evaluate.py` (or `--reuse-cache`) |
+| `pipelines/event_labeling/cache/` | downloaded scenes and DEMs for labelling | `run_labeling.py` |
+| `src/artifacts/manifests/*.bak` | manifest backups written by the baseline / sanitise scripts | the script that wrote them |
+
 ## Scope note
 
-This builds and verifies the architecture, data pipeline, and training mechanics. The
-sanity run proves the system trains end-to-end with finite losses and real backbone
-gradients; it makes **no** scientific-validity claim. Held-out-glacier evaluation, shortcut
-diagnostics (Head 2), cluster-occupancy checks (Head 3), and ablations are the next step
-(`glacier_ssl/eval/metrics.py` provides the metrics).
+This builds and verifies the architecture, data pipeline, training mechanics and a
+label-free evaluation suite. The first full run's evaluation
+(`artifacts/eval/output__step6720__20261109_103531__full/`) found the problems fixed in the
+architecture review. Next:
+1. Retrain with the review's changes.
+2. Evaluate against the random and pretrained baselines.
+3. Run the ablation grid in `DOCS_phase0/architecture_review.md` §7.
+4. Run the downstream event-classification task on the labels from
+   `pipelines/event_labeling`.

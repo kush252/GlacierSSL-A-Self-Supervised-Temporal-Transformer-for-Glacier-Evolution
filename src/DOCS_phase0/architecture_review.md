@@ -188,6 +188,10 @@ be ablated.
 
 ## 8. What to watch in the next run
 
+Retrain from scratch; do not resume an older checkpoint. The normalisation, the ViT's initial
+weights and the optimizer's parameter groups all differ. The step-by-step Kaggle commands,
+including the Prithvi download, are in `src/README.md` under "Kaggle flow".
+
 * **Head 2 loss will be much higher** (0.08 at the first real-data step vs ~0.015
   before). That is the intended consequence: the answer is no longer in the input. The
   question is whether it falls below the metadata baselines in the eval.
