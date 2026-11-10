@@ -1,0 +1,32 @@
+{
+  "student": {
+    "effective_rank": 22.40568084283946,
+    "mean_pairwise_cos": 0.19668537378311157,
+    "eta2_glacier": 0.10104178109412756,
+    "eta2_season": 0.18828122971020883,
+    "eta2_season_within_glacier": 0.21149153850866126,
+    "eta2_year_within_glacier": 0.482919235701331,
+    "probe_acc": {
+      "season (4)": 0.5750943396226416,
+      "geographic cluster (2)": 0.7132075471698113,
+      "glacier size (area terciles)": 0.5116981132075472,
+      "latitude (terciles)": 0.49735849056603776,
+      "year": 0.6316981132075472
+    }
+  },
+  "random": {
+    "effective_rank": 50.78892579165982,
+    "mean_pairwise_cos": 0.7674710750579834,
+    "eta2_glacier": 0.17836384883275866,
+    "eta2_season": 0.11524904049919697,
+    "eta2_season_within_glacier": 0.1421990199074612,
+    "eta2_year_within_glacier": 0.5212464422041903,
+    "probe_acc": {
+      "season (4)": 0.9969811320754717,
+      "geographic cluster (2)": 0.9622641509433962,
+      "glacier size (area terciles)": 0.3290566037735849,
+      "latitude (terciles)": 0.7147169811320755,
+      "year": 0.9788679245283018
+    }
+  }
+}

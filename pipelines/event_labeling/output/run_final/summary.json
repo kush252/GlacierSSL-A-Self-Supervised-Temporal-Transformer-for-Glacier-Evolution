@@ -1,0 +1,113 @@
+{
+ "glaciers": [
+  "G041652E43255N",
+  "G008398E46623N",
+  "G010597E46127N",
+  "G006828E45414N",
+  "G013374E47087N",
+  "G011792E46999N",
+  "G041523E43281N"
+ ],
+ "n_windows": 28,
+ "labels": {
+  "Stable": 5,
+  "Retreat": 12,
+  "Advance": 0,
+  "Fragmentation": 1,
+  "Disappearance": 0,
+  "Ambiguous": 8,
+  "Insufficient": 2
+ },
+ "tiers": {
+  "A": 2,
+  "B": 14,
+  "C": 10,
+  "-": 2
+ },
+ "epoch_status": {
+  "ok": 54,
+  "seasonal_snow": 9
+ },
+ "glims_validation": {
+  "n": 11,
+  "median_iou": 0.874
+ },
+ "config": {
+  "paths": {
+   "sqlite": "../../glacier_dataset.sqlite3",
+   "manifest": "../../src/artifacts/manifests/manifest.json",
+   "glims_cache": "cache/glims_dataset_analyses.gpkg",
+   "cache": "cache",
+   "output": "output"
+  },
+  "grid": {
+   "pixel_m": 10,
+   "buffer_m": 400
+  },
+  "scenes": {
+   "years": [
+    2016,
+    2024
+   ],
+   "window": [
+    "07-20",
+    "09-30"
+   ],
+   "max_tile_cloud_pct": 40,
+   "max_candidates_per_year": 8,
+   "include_dataset_scenes": true
+  },
+  "qc": {
+   "max_nodata_frac": 0.01,
+   "max_unknown_frac": 0.1,
+   "max_shadow_frac": 0.25,
+   "envelope_m": 100,
+   "ring_inner_m": 50,
+   "ring_outer_m": 400,
+   "seasonal_snow_baseline_quantile": 0.25,
+   "seasonal_snow_margin": 0.15
+  },
+  "mask": {
+   "ratio_red_swir": 2.0,
+   "blue_min": 0.05,
+   "water_ndwi_min": 0.45,
+   "water_nir_max": 0.08,
+   "ndsi_min": 0.4,
+   "ndsi_nir_min": 0.11,
+   "scl_unknown_classes": [
+    3,
+    8,
+    9,
+    10
+   ]
+  },
+  "geometry": {
+   "region_dilate_m": 20,
+   "advance_dilate_m": 300,
+   "advance_zone_quantile": 0.3,
+   "mmu_km2": 0.01,
+   "closing_px": 1,
+   "overlap_min_px": 10,
+   "terminus_quantile": 0.02,
+   "terminus_zone_quantile": 0.15
+  },
+  "uncertainty": {
+   "buffer_px": 0.5,
+   "rel_floor": 0.02,
+   "k_sigma": 2.0,
+   "mk_alpha": 0.05,
+   "terminus_dz_m": 15.0
+  },
+  "events": {
+   "persistence_epochs": 2,
+   "min_fragment_km2": 0.05,
+   "min_fragment_frac": 0.02,
+   "allow_lookahead": true,
+   "surge_jump_rel": 0.1
+  },
+  "tiers": {
+   "strong_snr": 3.0,
+   "min_valid_frac": 0.8
+  }
+ }
+}

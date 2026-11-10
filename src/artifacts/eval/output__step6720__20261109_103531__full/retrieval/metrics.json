@@ -1,0 +1,56 @@
+{
+  "student": {
+    "identity": {
+      "P@1": 0.5335849056603773,
+      "P@5": 0.3047547169811321,
+      "mAP": 0.08429047892672646,
+      "chance_P@1": 0.02490566037735849,
+      "n_queries": 1325
+    },
+    "state": {
+      "top1_same_season": 0.4950943396226415,
+      "chance_same_season": 0.22841673451320438,
+      "hit@1_same_season_adjacent_year": 0.21975497702909647,
+      "chance_adjacent_year": 0.05253638176157144,
+      "median_top1_time_offset_yr": 1.5879859924316406,
+      "mean_candidate_time_offset_yr": 3.023901473531183,
+      "n_queries": 1325
+    }
+  },
+  "random": {
+    "identity": {
+      "P@1": 0.28452830188679246,
+      "P@5": 0.17011320754716983,
+      "mAP": 0.0640218227192931,
+      "chance_P@1": 0.02490566037735849,
+      "n_queries": 1325
+    },
+    "state": {
+      "top1_same_season": 0.3018867924528302,
+      "chance_same_season": 0.22841673451320438,
+      "hit@1_same_season_adjacent_year": 0.28637059724349156,
+      "chance_adjacent_year": 0.05253638176157144,
+      "median_top1_time_offset_yr": 0.6160287857055664,
+      "mean_candidate_time_offset_yr": 3.023901473531183,
+      "n_queries": 1325
+    }
+  },
+  "raw pixels (32x32)": {
+    "identity": {
+      "P@1": 0.9864150943396226,
+      "P@5": 0.9314716981132074,
+      "mAP": 0.41436980117673694,
+      "chance_P@1": 0.02490566037735849,
+      "n_queries": 1325
+    },
+    "state": {
+      "top1_same_season": 0.6686792452830189,
+      "chance_same_season": 0.22841673451320438,
+      "hit@1_same_season_adjacent_year": 0.2986217457886677,
+      "chance_adjacent_year": 0.05253638176157144,
+      "median_top1_time_offset_yr": 1.7659497261047363,
+      "mean_candidate_time_offset_yr": 3.023901473531183,
+      "n_queries": 1325
+    }
+  }
+}

@@ -1,0 +1,78 @@
+# Glacier event ground-truth protocol: all thresholds in one place.
+# Every value here is reported in the paper's methods table; change them here, never in code.
+
+paths:
+  sqlite: ../../glacier_dataset.sqlite3                     # outlines + dataset scene ids
+  manifest: ../../src/artifacts/manifests/manifest.json     # glacier list + split
+  glims_cache: cache/glims_dataset_analyses.gpkg            # multi-temporal GLIMS outlines (optional)
+  cache: cache                                              # native-resolution scene chips, DEM
+  output: output
+
+grid:
+  pixel_m: 10            # native Sentinel-2 10 m grid; 20 m bands (B11, SCL) are resampled onto it
+  buffer_m: 400          # analysis window = GLIMS outline buffered by this distance
+
+scenes:
+  years: [2016, 2024]
+  # End-of-ablation-season candidate window (Northern Hemisphere). Glacier inventories map
+  # outlines on the least-snow, cloud-free scene closest to the end of the melt season.
+  window: ["07-20", "09-30"]   # Oct scenes: low sun -> cirque shadows + early snow
+  max_tile_cloud_pct: 40          # tile-level pre-filter only; real cloud is judged over the glacier
+  max_candidates_per_year: 8      # lowest-cloud searched scenes evaluated per year
+  include_dataset_scenes: true    # also evaluate the SSL dataset's own scenes if they fall in the window
+
+qc:
+  max_nodata_frac: 0.01           # of the glacier envelope (outline + 100 m)
+  max_unknown_frac: 0.10          # cloud / cloud-shadow pixels not spectrally ice, inside the analysis region
+  max_shadow_frac: 0.25           # topographic shadow (NIR and red both < 0.06) inside the analysis region
+  envelope_m: 100
+  ring_inner_m: 50                # off-glacier ring used to detect seasonal snow
+  ring_outer_m: 400
+  # An epoch is "seasonal_snow" if its ring snow fraction exceeds the glacier's typical
+  # end-of-season ring fraction (this quantile of the per-year best scenes) by this margin.
+  # Self-calibrating: neighbouring permanent ice in the ring is part of the baseline; a
+  # quantile (not the minimum) keeps one extreme melt year (e.g. 2022) from flagging all others.
+  seasonal_snow_baseline_quantile: 0.25
+  seasonal_snow_margin: 0.15
+
+mask:
+  # Primary ice/snow mask: red/SWIR band ratio (Paul et al. 2016, Sentinel-2) with a
+  # blue-band condition, plus a NIR condition to reject water.
+  ratio_red_swir: 2.0
+  blue_min: 0.05
+  water_ndwi_min: 0.45     # water = NDWI(green,NIR) > 0.45 and NIR < 0.08 (keeps shadowed ice)
+  water_nir_max: 0.08
+  # Secondary, semi-independent mask: NDSI (Hall et al. 1995) with NIR > 0.11.
+  ndsi_min: 0.4
+  ndsi_nir_min: 0.11
+  scl_unknown_classes: [3, 8, 9, 10]   # cloud shadow, cloud medium/high, cirrus
+
+geometry:
+  region_dilate_m: 20     # analysis region R = outline dilated by this (outline digitising tolerance)
+  advance_dilate_m: 300   # ice beyond R but connected to it, up to this distance, counts as glacier...
+  advance_zone_quantile: 0.30   # ...but only below this elevation quantile of the outline (advance is
+                                # downslope at the tongue; upslope off-glacier snow must not count)
+  mmu_km2: 0.01           # minimum mapping unit (RGI 7.0 minimum glacier size)
+  closing_px: 1           # gaps narrower than ~2*closing_px pixels do not split a glacier
+  overlap_min_px: 10      # lineage: min pixel overlap for a child to descend from a parent
+  terminus_quantile: 0.02 # terminus elevation = this quantile of ice-body elevations
+  terminus_zone_quantile: 0.15   # terminus zone = lowest 15 % of the outline by elevation
+
+uncertainty:
+  buffer_px: 0.5          # outline uncertainty: perimeter x 0.5 px (buffer method, Paul et al. 2013)
+  rel_floor: 0.02         # never claim better than 2 % area precision
+  k_sigma: 2.0            # change is significant if |dA| > k * combined sigma (~95 %)
+  mk_alpha: 0.05          # Mann-Kendall significance for windows with >= 4 valid epochs
+  terminus_dz_m: 15.0     # terminus elevation change must exceed this (GLO-30 + slope geometry)
+
+events:
+  persistence_epochs: 2   # a split / disappearance must hold for this many consecutive valid epochs
+  # A fragment must be substantial, so marginal snow/ice patches near the MMU are not "fragmentation":
+  min_fragment_km2: 0.05
+  min_fragment_frac: 0.02 # of the parent body area
+  allow_lookahead: true   # confirmation may use epochs after the window (the event is still inside it)
+  surge_jump_rel: 0.10    # single-interval area gain > 10 % (and significant) => possible_surge flag
+
+tiers:
+  strong_snr: 3.0
+  min_valid_frac: 0.8

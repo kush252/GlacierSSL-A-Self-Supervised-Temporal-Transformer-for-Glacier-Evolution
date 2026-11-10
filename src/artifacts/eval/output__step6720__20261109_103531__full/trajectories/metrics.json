@@ -1,0 +1,22 @@
+{
+  "student": {
+    "n_glaciers": 40,
+    "path_ratio": 0.5520862880110462,
+    "spearman_gap_all": 0.4315258761758658,
+    "spearman_gap_same_season": 0.4592609039836056,
+    "spearman_pixel_same_season": 0.7726011040250389,
+    "partial_pixel_given_gap": 0.7368989473254932,
+    "seasonal_over_annual": 1.664598992237678,
+    "pixel_vs_gap_same_season": 0.3431785087330634
+  },
+  "random": {
+    "n_glaciers": 40,
+    "path_ratio": 0.49799934773845045,
+    "spearman_gap_all": 0.6449430876938572,
+    "spearman_gap_same_season": 0.7142104436344346,
+    "spearman_pixel_same_season": 0.7788960382643817,
+    "partial_pixel_given_gap": 0.8100139035348732,
+    "seasonal_over_annual": 1.5357263928804643,
+    "pixel_vs_gap_same_season": 0.3431785087330634
+  }
+}

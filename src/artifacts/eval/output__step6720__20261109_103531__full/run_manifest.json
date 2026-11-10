@@ -229,5 +229,7 @@
     "eval": {
       "workers": 0
     }
-  }
+  },
+  "n_glaciers": 40,
+  "n_timestamps": 1440
 }

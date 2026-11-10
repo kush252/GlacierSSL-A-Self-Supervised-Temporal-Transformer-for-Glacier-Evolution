@@ -1,0 +1,380 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Glacier Event Review</title>
+<style>
+:root{--bg:#f9f9f7;--card:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--line:#e4e3de;--acc:#2a78d6}
+@media (prefers-color-scheme:dark){:root{--bg:#0d0d0d;--card:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--line:#383835;--acc:#3987e5}}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,sans-serif;margin:0;padding:16px}
+header{position:sticky;top:0;background:var(--bg);padding:8px 0 12px;border-bottom:1px solid var(--line);z-index:2}
+h1{font-size:18px;margin:0 0 6px} .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;margin:14px 0}
+h2{font-size:14px;margin:0 0 8px} h2 span{color:var(--ink2);font-weight:400} img{max-width:100%;border-radius:4px}
+.opts{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0} .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.notes{flex:1;min-width:220px;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+button,input#rev{padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+button.primary{background:var(--acc);color:#fff;border-color:var(--acc)} .auto{color:var(--ink2)}
+.done{border-color:var(--acc)} #count{color:var(--ink2)}
+</style></head><body>
+<header><h1>Glacier event review (blind)</h1>
+<p>Judge the event from the imagery and measurements only. Classes: Stable, Retreat, Advance, Fragmentation
+(ice body splits into separate parts that stay separate), Disappearance (ice gone for good), Ambiguous, Insufficient.</p>
+<input id="rev" placeholder="your reviewer id"> <button class="primary" onclick="exportCsv()">Export CSV</button>
+<span id="count"></span></header>
+
+<section class="card" data-id="G041652E43255N_2016_2024">
+  <h2>SEVERNYJ_DJUGUTURLJUCHAT · G041652E43255N · 2016–2024
+      <span>9/9 valid epochs</span></h2>
+  <a href="G041652E43255N/fig_2016_2024.png" target="_blank"><img src="G041652E43255N/fig_2016_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G041652E43255N_2016_2024' value='Stable'> Stable</label><label><input type='radio' name='G041652E43255N_2016_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G041652E43255N_2016_2024' value='Advance'> Advance</label><label><input type='radio' name='G041652E43255N_2016_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G041652E43255N_2016_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G041652E43255N_2016_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G041652E43255N_2016_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G041652E43255N_2017_2024">
+  <h2>SEVERNYJ_DJUGUTURLJUCHAT · G041652E43255N · 2017–2024
+      <span>8/8 valid epochs</span></h2>
+  <a href="G041652E43255N/fig_2017_2024.png" target="_blank"><img src="G041652E43255N/fig_2017_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G041652E43255N_2017_2024' value='Stable'> Stable</label><label><input type='radio' name='G041652E43255N_2017_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G041652E43255N_2017_2024' value='Advance'> Advance</label><label><input type='radio' name='G041652E43255N_2017_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G041652E43255N_2017_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G041652E43255N_2017_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G041652E43255N_2017_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G041652E43255N_2019_2024">
+  <h2>SEVERNYJ_DJUGUTURLJUCHAT · G041652E43255N · 2019–2024
+      <span>6/6 valid epochs</span></h2>
+  <a href="G041652E43255N/fig_2019_2024.png" target="_blank"><img src="G041652E43255N/fig_2019_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G041652E43255N_2019_2024' value='Stable'> Stable</label><label><input type='radio' name='G041652E43255N_2019_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G041652E43255N_2019_2024' value='Advance'> Advance</label><label><input type='radio' name='G041652E43255N_2019_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G041652E43255N_2019_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G041652E43255N_2019_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G041652E43255N_2019_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G041652E43255N_2016_2022">
+  <h2>SEVERNYJ_DJUGUTURLJUCHAT · G041652E43255N · 2016–2022
+      <span>7/7 valid epochs</span></h2>
+  <a href="G041652E43255N/fig_2016_2022.png" target="_blank"><img src="G041652E43255N/fig_2016_2022.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G041652E43255N_2016_2022' value='Stable'> Stable</label><label><input type='radio' name='G041652E43255N_2016_2022' value='Retreat'> Retreat</label><label><input type='radio' name='G041652E43255N_2016_2022' value='Advance'> Advance</label><label><input type='radio' name='G041652E43255N_2016_2022' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G041652E43255N_2016_2022' value='Disappearance'> Disappearance</label><label><input type='radio' name='G041652E43255N_2016_2022' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G041652E43255N_2016_2022' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G008398E46623N_2016_2024">
+  <h2>RHONEGLETSCHER · G008398E46623N · 2016–2024
+      <span>9/9 valid epochs</span></h2>
+  <a href="G008398E46623N/fig_2016_2024.png" target="_blank"><img src="G008398E46623N/fig_2016_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G008398E46623N_2016_2024' value='Stable'> Stable</label><label><input type='radio' name='G008398E46623N_2016_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G008398E46623N_2016_2024' value='Advance'> Advance</label><label><input type='radio' name='G008398E46623N_2016_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G008398E46623N_2016_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G008398E46623N_2016_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G008398E46623N_2016_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G008398E46623N_2018_2019">
+  <h2>RHONEGLETSCHER · G008398E46623N · 2018–2019
+      <span>2/2 valid epochs</span></h2>
+  <a href="G008398E46623N/fig_2018_2019.png" target="_blank"><img src="G008398E46623N/fig_2018_2019.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G008398E46623N_2018_2019' value='Stable'> Stable</label><label><input type='radio' name='G008398E46623N_2018_2019' value='Retreat'> Retreat</label><label><input type='radio' name='G008398E46623N_2018_2019' value='Advance'> Advance</label><label><input type='radio' name='G008398E46623N_2018_2019' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G008398E46623N_2018_2019' value='Disappearance'> Disappearance</label><label><input type='radio' name='G008398E46623N_2018_2019' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G008398E46623N_2018_2019' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G008398E46623N_2022_2024">
+  <h2>RHONEGLETSCHER · G008398E46623N · 2022–2024
+      <span>3/3 valid epochs</span></h2>
+  <a href="G008398E46623N/fig_2022_2024.png" target="_blank"><img src="G008398E46623N/fig_2022_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G008398E46623N_2022_2024' value='Stable'> Stable</label><label><input type='radio' name='G008398E46623N_2022_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G008398E46623N_2022_2024' value='Advance'> Advance</label><label><input type='radio' name='G008398E46623N_2022_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G008398E46623N_2022_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G008398E46623N_2022_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G008398E46623N_2022_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G008398E46623N_2016_2023">
+  <h2>RHONEGLETSCHER · G008398E46623N · 2016–2023
+      <span>8/8 valid epochs</span></h2>
+  <a href="G008398E46623N/fig_2016_2023.png" target="_blank"><img src="G008398E46623N/fig_2016_2023.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G008398E46623N_2016_2023' value='Stable'> Stable</label><label><input type='radio' name='G008398E46623N_2016_2023' value='Retreat'> Retreat</label><label><input type='radio' name='G008398E46623N_2016_2023' value='Advance'> Advance</label><label><input type='radio' name='G008398E46623N_2016_2023' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G008398E46623N_2016_2023' value='Disappearance'> Disappearance</label><label><input type='radio' name='G008398E46623N_2016_2023' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G008398E46623N_2016_2023' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G010597E46127N_2016_2024">
+  <h2>LARES · G010597E46127N · 2016–2024
+      <span>4/9 valid epochs</span></h2>
+  <a href="G010597E46127N/fig_2016_2024.png" target="_blank"><img src="G010597E46127N/fig_2016_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G010597E46127N_2016_2024' value='Stable'> Stable</label><label><input type='radio' name='G010597E46127N_2016_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G010597E46127N_2016_2024' value='Advance'> Advance</label><label><input type='radio' name='G010597E46127N_2016_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G010597E46127N_2016_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G010597E46127N_2016_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G010597E46127N_2016_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G010597E46127N_2020_2024">
+  <h2>LARES · G010597E46127N · 2020–2024
+      <span>2/5 valid epochs</span></h2>
+  <a href="G010597E46127N/fig_2020_2024.png" target="_blank"><img src="G010597E46127N/fig_2020_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G010597E46127N_2020_2024' value='Stable'> Stable</label><label><input type='radio' name='G010597E46127N_2020_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G010597E46127N_2020_2024' value='Advance'> Advance</label><label><input type='radio' name='G010597E46127N_2020_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G010597E46127N_2020_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G010597E46127N_2020_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G010597E46127N_2020_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G010597E46127N_2022_2023">
+  <h2>LARES · G010597E46127N · 2022–2023
+      <span>2/2 valid epochs</span></h2>
+  <a href="G010597E46127N/fig_2022_2023.png" target="_blank"><img src="G010597E46127N/fig_2022_2023.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G010597E46127N_2022_2023' value='Stable'> Stable</label><label><input type='radio' name='G010597E46127N_2022_2023' value='Retreat'> Retreat</label><label><input type='radio' name='G010597E46127N_2022_2023' value='Advance'> Advance</label><label><input type='radio' name='G010597E46127N_2022_2023' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G010597E46127N_2022_2023' value='Disappearance'> Disappearance</label><label><input type='radio' name='G010597E46127N_2022_2023' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G010597E46127N_2022_2023' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G010597E46127N_2019_2020">
+  <h2>LARES · G010597E46127N · 2019–2020
+      <span>0/2 valid epochs</span></h2>
+  <a href="G010597E46127N/fig_2019_2020.png" target="_blank"><img src="G010597E46127N/fig_2019_2020.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G010597E46127N_2019_2020' value='Stable'> Stable</label><label><input type='radio' name='G010597E46127N_2019_2020' value='Retreat'> Retreat</label><label><input type='radio' name='G010597E46127N_2019_2020' value='Advance'> Advance</label><label><input type='radio' name='G010597E46127N_2019_2020' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G010597E46127N_2019_2020' value='Disappearance'> Disappearance</label><label><input type='radio' name='G010597E46127N_2019_2020' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G010597E46127N_2019_2020' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G006828E45414N_2016_2024">
+  <h2>DE_L_EP_NA · G006828E45414N · 2016–2024
+      <span>5/9 valid epochs</span></h2>
+  <a href="G006828E45414N/fig_2016_2024.png" target="_blank"><img src="G006828E45414N/fig_2016_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G006828E45414N_2016_2024' value='Stable'> Stable</label><label><input type='radio' name='G006828E45414N_2016_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G006828E45414N_2016_2024' value='Advance'> Advance</label><label><input type='radio' name='G006828E45414N_2016_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G006828E45414N_2016_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G006828E45414N_2016_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G006828E45414N_2016_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G006828E45414N_2016_2022">
+  <h2>DE_L_EP_NA · G006828E45414N · 2016–2022
+      <span>3/7 valid epochs</span></h2>
+  <a href="G006828E45414N/fig_2016_2022.png" target="_blank"><img src="G006828E45414N/fig_2016_2022.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G006828E45414N_2016_2022' value='Stable'> Stable</label><label><input type='radio' name='G006828E45414N_2016_2022' value='Retreat'> Retreat</label><label><input type='radio' name='G006828E45414N_2016_2022' value='Advance'> Advance</label><label><input type='radio' name='G006828E45414N_2016_2022' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G006828E45414N_2016_2022' value='Disappearance'> Disappearance</label><label><input type='radio' name='G006828E45414N_2016_2022' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G006828E45414N_2016_2022' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G006828E45414N_2017_2020">
+  <h2>DE_L_EP_NA · G006828E45414N · 2017–2020
+      <span>1/4 valid epochs</span></h2>
+  <a href="G006828E45414N/fig_2017_2020.png" target="_blank"><img src="G006828E45414N/fig_2017_2020.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G006828E45414N_2017_2020' value='Stable'> Stable</label><label><input type='radio' name='G006828E45414N_2017_2020' value='Retreat'> Retreat</label><label><input type='radio' name='G006828E45414N_2017_2020' value='Advance'> Advance</label><label><input type='radio' name='G006828E45414N_2017_2020' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G006828E45414N_2017_2020' value='Disappearance'> Disappearance</label><label><input type='radio' name='G006828E45414N_2017_2020' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G006828E45414N_2017_2020' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G006828E45414N_2016_2023">
+  <h2>DE_L_EP_NA · G006828E45414N · 2016–2023
+      <span>4/8 valid epochs</span></h2>
+  <a href="G006828E45414N/fig_2016_2023.png" target="_blank"><img src="G006828E45414N/fig_2016_2023.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G006828E45414N_2016_2023' value='Stable'> Stable</label><label><input type='radio' name='G006828E45414N_2016_2023' value='Retreat'> Retreat</label><label><input type='radio' name='G006828E45414N_2016_2023' value='Advance'> Advance</label><label><input type='radio' name='G006828E45414N_2016_2023' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G006828E45414N_2016_2023' value='Disappearance'> Disappearance</label><label><input type='radio' name='G006828E45414N_2016_2023' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G006828E45414N_2016_2023' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G013374E47087N_2016_2024">
+  <h2>NONE · G013374E47087N · 2016–2024
+      <span>9/9 valid epochs</span></h2>
+  <a href="G013374E47087N/fig_2016_2024.png" target="_blank"><img src="G013374E47087N/fig_2016_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G013374E47087N_2016_2024' value='Stable'> Stable</label><label><input type='radio' name='G013374E47087N_2016_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G013374E47087N_2016_2024' value='Advance'> Advance</label><label><input type='radio' name='G013374E47087N_2016_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G013374E47087N_2016_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G013374E47087N_2016_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G013374E47087N_2016_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G013374E47087N_2018_2022">
+  <h2>NONE · G013374E47087N · 2018–2022
+      <span>5/5 valid epochs</span></h2>
+  <a href="G013374E47087N/fig_2018_2022.png" target="_blank"><img src="G013374E47087N/fig_2018_2022.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G013374E47087N_2018_2022' value='Stable'> Stable</label><label><input type='radio' name='G013374E47087N_2018_2022' value='Retreat'> Retreat</label><label><input type='radio' name='G013374E47087N_2018_2022' value='Advance'> Advance</label><label><input type='radio' name='G013374E47087N_2018_2022' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G013374E47087N_2018_2022' value='Disappearance'> Disappearance</label><label><input type='radio' name='G013374E47087N_2018_2022' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G013374E47087N_2018_2022' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G013374E47087N_2018_2023">
+  <h2>NONE · G013374E47087N · 2018–2023
+      <span>6/6 valid epochs</span></h2>
+  <a href="G013374E47087N/fig_2018_2023.png" target="_blank"><img src="G013374E47087N/fig_2018_2023.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G013374E47087N_2018_2023' value='Stable'> Stable</label><label><input type='radio' name='G013374E47087N_2018_2023' value='Retreat'> Retreat</label><label><input type='radio' name='G013374E47087N_2018_2023' value='Advance'> Advance</label><label><input type='radio' name='G013374E47087N_2018_2023' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G013374E47087N_2018_2023' value='Disappearance'> Disappearance</label><label><input type='radio' name='G013374E47087N_2018_2023' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G013374E47087N_2018_2023' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G013374E47087N_2020_2024">
+  <h2>NONE · G013374E47087N · 2020–2024
+      <span>5/5 valid epochs</span></h2>
+  <a href="G013374E47087N/fig_2020_2024.png" target="_blank"><img src="G013374E47087N/fig_2020_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G013374E47087N_2020_2024' value='Stable'> Stable</label><label><input type='radio' name='G013374E47087N_2020_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G013374E47087N_2020_2024' value='Advance'> Advance</label><label><input type='radio' name='G013374E47087N_2020_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G013374E47087N_2020_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G013374E47087N_2020_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G013374E47087N_2020_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G011792E46999N_2016_2024">
+  <h2>WAXEGG_KEES · G011792E46999N · 2016–2024
+      <span>9/9 valid epochs</span></h2>
+  <a href="G011792E46999N/fig_2016_2024.png" target="_blank"><img src="G011792E46999N/fig_2016_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G011792E46999N_2016_2024' value='Stable'> Stable</label><label><input type='radio' name='G011792E46999N_2016_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G011792E46999N_2016_2024' value='Advance'> Advance</label><label><input type='radio' name='G011792E46999N_2016_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G011792E46999N_2016_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G011792E46999N_2016_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G011792E46999N_2016_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G011792E46999N_2018_2024">
+  <h2>WAXEGG_KEES · G011792E46999N · 2018–2024
+      <span>7/7 valid epochs</span></h2>
+  <a href="G011792E46999N/fig_2018_2024.png" target="_blank"><img src="G011792E46999N/fig_2018_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G011792E46999N_2018_2024' value='Stable'> Stable</label><label><input type='radio' name='G011792E46999N_2018_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G011792E46999N_2018_2024' value='Advance'> Advance</label><label><input type='radio' name='G011792E46999N_2018_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G011792E46999N_2018_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G011792E46999N_2018_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G011792E46999N_2018_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G011792E46999N_2018_2023">
+  <h2>WAXEGG_KEES · G011792E46999N · 2018–2023
+      <span>6/6 valid epochs</span></h2>
+  <a href="G011792E46999N/fig_2018_2023.png" target="_blank"><img src="G011792E46999N/fig_2018_2023.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G011792E46999N_2018_2023' value='Stable'> Stable</label><label><input type='radio' name='G011792E46999N_2018_2023' value='Retreat'> Retreat</label><label><input type='radio' name='G011792E46999N_2018_2023' value='Advance'> Advance</label><label><input type='radio' name='G011792E46999N_2018_2023' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G011792E46999N_2018_2023' value='Disappearance'> Disappearance</label><label><input type='radio' name='G011792E46999N_2018_2023' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G011792E46999N_2018_2023' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G011792E46999N_2021_2024">
+  <h2>WAXEGG_KEES · G011792E46999N · 2021–2024
+      <span>4/4 valid epochs</span></h2>
+  <a href="G011792E46999N/fig_2021_2024.png" target="_blank"><img src="G011792E46999N/fig_2021_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G011792E46999N_2021_2024' value='Stable'> Stable</label><label><input type='radio' name='G011792E46999N_2021_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G011792E46999N_2021_2024' value='Advance'> Advance</label><label><input type='radio' name='G011792E46999N_2021_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G011792E46999N_2021_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G011792E46999N_2021_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G011792E46999N_2021_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G041523E43281N_2016_2024">
+  <h2>ALIBEKSKIJ · G041523E43281N · 2016–2024
+      <span>9/9 valid epochs</span></h2>
+  <a href="G041523E43281N/fig_2016_2024.png" target="_blank"><img src="G041523E43281N/fig_2016_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G041523E43281N_2016_2024' value='Stable'> Stable</label><label><input type='radio' name='G041523E43281N_2016_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G041523E43281N_2016_2024' value='Advance'> Advance</label><label><input type='radio' name='G041523E43281N_2016_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G041523E43281N_2016_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G041523E43281N_2016_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G041523E43281N_2016_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G041523E43281N_2017_2021">
+  <h2>ALIBEKSKIJ · G041523E43281N · 2017–2021
+      <span>5/5 valid epochs</span></h2>
+  <a href="G041523E43281N/fig_2017_2021.png" target="_blank"><img src="G041523E43281N/fig_2017_2021.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G041523E43281N_2017_2021' value='Stable'> Stable</label><label><input type='radio' name='G041523E43281N_2017_2021' value='Retreat'> Retreat</label><label><input type='radio' name='G041523E43281N_2017_2021' value='Advance'> Advance</label><label><input type='radio' name='G041523E43281N_2017_2021' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G041523E43281N_2017_2021' value='Disappearance'> Disappearance</label><label><input type='radio' name='G041523E43281N_2017_2021' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G041523E43281N_2017_2021' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G041523E43281N_2016_2022">
+  <h2>ALIBEKSKIJ · G041523E43281N · 2016–2022
+      <span>7/7 valid epochs</span></h2>
+  <a href="G041523E43281N/fig_2016_2022.png" target="_blank"><img src="G041523E43281N/fig_2016_2022.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G041523E43281N_2016_2022' value='Stable'> Stable</label><label><input type='radio' name='G041523E43281N_2016_2022' value='Retreat'> Retreat</label><label><input type='radio' name='G041523E43281N_2016_2022' value='Advance'> Advance</label><label><input type='radio' name='G041523E43281N_2016_2022' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G041523E43281N_2016_2022' value='Disappearance'> Disappearance</label><label><input type='radio' name='G041523E43281N_2016_2022' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G041523E43281N_2016_2022' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<section class="card" data-id="G041523E43281N_2017_2024">
+  <h2>ALIBEKSKIJ · G041523E43281N · 2017–2024
+      <span>8/8 valid epochs</span></h2>
+  <a href="G041523E43281N/fig_2017_2024.png" target="_blank"><img src="G041523E43281N/fig_2017_2024.png" loading="lazy" alt="evidence panel"></a>
+  
+  <div class="opts"><label><input type='radio' name='G041523E43281N_2017_2024' value='Stable'> Stable</label><label><input type='radio' name='G041523E43281N_2017_2024' value='Retreat'> Retreat</label><label><input type='radio' name='G041523E43281N_2017_2024' value='Advance'> Advance</label><label><input type='radio' name='G041523E43281N_2017_2024' value='Fragmentation'> Fragmentation</label><label><input type='radio' name='G041523E43281N_2017_2024' value='Disappearance'> Disappearance</label><label><input type='radio' name='G041523E43281N_2017_2024' value='Ambiguous'> Ambiguous</label><label><input type='radio' name='G041523E43281N_2017_2024' value='Insufficient'> Insufficient</label></div>
+  <div class="row">
+    <label>confidence <select class="conf"><option>high</option><option selected>medium</option><option>low</option></select></label>
+    <label class="also"><input type="checkbox" class="also_retreat"> also retreating</label>
+    <input class="notes" placeholder="notes (what you saw, e.g. 'split at 2021 between tongues')">
+  </div>
+</section>
+<script>
+const KEY='glacier_review_'+location.pathname;
+function save(){const d={rev:document.getElementById('rev').value,items:{}};
+ document.querySelectorAll('.card').forEach(c=>{const id=c.dataset.id,s=c.querySelector('input[type=radio]:checked');
+  d.items[id]={label:s?s.value:'',conf:c.querySelector('.conf').value,also:c.querySelector('.also_retreat').checked,notes:c.querySelector('.notes').value};
+  c.classList.toggle('done',!!s);});
+ const n=Object.values(d.items).filter(x=>x.label).length;
+ document.getElementById('count').textContent=n+' / '+Object.keys(d.items).length+' reviewed';
+ try{localStorage.setItem(KEY,JSON.stringify(d));}catch(e){} return d;}
+function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY));}catch(e){}
+ if(d){document.getElementById('rev').value=d.rev||'';
+  document.querySelectorAll('.card').forEach(c=>{const x=(d.items||{})[c.dataset.id];if(!x)return;
+   if(x.label){const r=c.querySelector(`input[value="${x.label}"]`);if(r)r.checked=true;}
+   c.querySelector('.conf').value=x.conf||'medium';c.querySelector('.also_retreat').checked=!!x.also;c.querySelector('.notes').value=x.notes||'';});}
+ save();}
+function exportCsv(){const d=save();if(!d.rev){alert('Enter a reviewer id first');return;}
+ const q=s=>'"'+String(s).replaceAll('"','""')+'"';
+ const rows=[['window_id','reviewer','label','confidence','also_retreat','notes']];
+ for(const[id,x]of Object.entries(d.items))if(x.label)rows.push([id,d.rev,x.label,x.conf,x.also,x.notes]);
+ const blob=new Blob([rows.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='review_'+d.rev+'.csv';a.click();}
+document.addEventListener('change',save);document.addEventListener('input',save);load();
+</script></body></html>

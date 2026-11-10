@@ -1,0 +1,257 @@
+{
+  "run_name": "output__step6720__20261109_103531__full",
+  "tests": {
+    "head2": {
+      "headline": {
+        "mae_years": 2.638323879856544,
+        "mae_ci": [
+          2.5994457956173593,
+          2.6787856691431853
+        ],
+        "rmse_years": 3.2974489363020676,
+        "spearman": 0.4884487616408654,
+        "n_pairs": 15420,
+        "n_glaciers": 40,
+        "mae_by_gap_range": {
+          "<0.5": 0.10461731468414588,
+          "0.5-1": 0.4351656076319294,
+          "1-2": 1.1528038753153338,
+          "2-4": 2.5443978555382496,
+          ">=4": 5.125273452585669
+        },
+        "best_metadata_baseline_mae": 0.08672553227570673,
+        "probe_mae": {
+          "ridge probe [student] timestamp_out": 1.3461661175595192,
+          "ridge probe [student] visual_pool": 1.4258538469701194,
+          "ridge probe [random] timestamp_out": 0.22366177333535775,
+          "ridge probe [random] visual_pool": 1.4598569818991014
+        },
+        "pair_order_max_abs_diff": 2.9802322387695312e-08
+      },
+      "notes": ""
+    },
+    "embedding": {
+      "headline": {
+        "student": {
+          "effective_rank": 22.40568084283946,
+          "mean_pairwise_cos": 0.19668537378311157,
+          "eta2_glacier": 0.10104178109412756,
+          "eta2_season": 0.18828122971020883,
+          "eta2_season_within_glacier": 0.21149153850866126,
+          "eta2_year_within_glacier": 0.482919235701331,
+          "probe_acc": {
+            "season (4)": 0.5750943396226416,
+            "geographic cluster (2)": 0.7132075471698113,
+            "glacier size (area terciles)": 0.5116981132075472,
+            "latitude (terciles)": 0.49735849056603776,
+            "year": 0.6316981132075472
+          }
+        },
+        "random": {
+          "effective_rank": 50.78892579165982,
+          "mean_pairwise_cos": 0.7674710750579834,
+          "eta2_glacier": 0.17836384883275866,
+          "eta2_season": 0.11524904049919697,
+          "eta2_season_within_glacier": 0.1421990199074612,
+          "eta2_year_within_glacier": 0.5212464422041903,
+          "probe_acc": {
+            "season (4)": 0.9969811320754717,
+            "geographic cluster (2)": 0.9622641509433962,
+            "glacier size (area terciles)": 0.3290566037735849,
+            "latitude (terciles)": 0.7147169811320755,
+            "year": 0.9788679245283018
+          }
+        }
+      },
+      "notes": ""
+    },
+    "trajectory": {
+      "headline": {
+        "student": {
+          "n_glaciers": 40,
+          "path_ratio": 0.5520862880110462,
+          "spearman_gap_all": 0.4315258761758658,
+          "spearman_gap_same_season": 0.4592609039836056,
+          "spearman_pixel_same_season": 0.7726011040250389,
+          "partial_pixel_given_gap": 0.7368989473254932,
+          "seasonal_over_annual": 1.664598992237678,
+          "pixel_vs_gap_same_season": 0.3431785087330634
+        },
+        "random": {
+          "n_glaciers": 40,
+          "path_ratio": 0.49799934773845045,
+          "spearman_gap_all": 0.6449430876938572,
+          "spearman_gap_same_season": 0.7142104436344346,
+          "spearman_pixel_same_season": 0.7788960382643817,
+          "partial_pixel_given_gap": 0.8100139035348732,
+          "seasonal_over_annual": 1.5357263928804643,
+          "pixel_vs_gap_same_season": 0.3431785087330634
+        }
+      },
+      "notes": ""
+    },
+    "retrieval": {
+      "headline": {
+        "student": {
+          "identity": {
+            "P@1": 0.5335849056603773,
+            "P@5": 0.3047547169811321,
+            "mAP": 0.08429047892672646,
+            "chance_P@1": 0.02490566037735849,
+            "n_queries": 1325
+          },
+          "state": {
+            "top1_same_season": 0.4950943396226415,
+            "chance_same_season": 0.22841673451320438,
+            "hit@1_same_season_adjacent_year": 0.21975497702909647,
+            "chance_adjacent_year": 0.05253638176157144,
+            "median_top1_time_offset_yr": 1.5879859924316406,
+            "mean_candidate_time_offset_yr": 3.023901473531183,
+            "n_queries": 1325
+          }
+        },
+        "random": {
+          "identity": {
+            "P@1": 0.28452830188679246,
+            "P@5": 0.17011320754716983,
+            "mAP": 0.0640218227192931,
+            "chance_P@1": 0.02490566037735849,
+            "n_queries": 1325
+          },
+          "state": {
+            "top1_same_season": 0.3018867924528302,
+            "chance_same_season": 0.22841673451320438,
+            "hit@1_same_season_adjacent_year": 0.28637059724349156,
+            "chance_adjacent_year": 0.05253638176157144,
+            "median_top1_time_offset_yr": 0.6160287857055664,
+            "mean_candidate_time_offset_yr": 3.023901473531183,
+            "n_queries": 1325
+          }
+        },
+        "raw pixels (32x32)": {
+          "identity": {
+            "P@1": 0.9864150943396226,
+            "P@5": 0.9314716981132074,
+            "mAP": 0.41436980117673694,
+            "chance_P@1": 0.02490566037735849,
+            "n_queries": 1325
+          },
+          "state": {
+            "top1_same_season": 0.6686792452830189,
+            "chance_same_season": 0.22841673451320438,
+            "hit@1_same_season_adjacent_year": 0.2986217457886677,
+            "chance_adjacent_year": 0.05253638176157144,
+            "median_top1_time_offset_yr": 1.7659497261047363,
+            "mean_candidate_time_offset_yr": 3.023901473531183,
+            "n_queries": 1325
+          }
+        }
+      },
+      "notes": ""
+    },
+    "robustness": {
+      "headline": {
+        "missing_timestamps": {
+          "dropped 0% (full)": {
+            "drift": 0.0,
+            "seq_drift": 0.0,
+            "mae": 2.6678538501262663
+          },
+          "dropped 10%": {
+            "drift": 0.0007333703649540742,
+            "seq_drift": 0.004283034304777781,
+            "mae": 2.666875696182251
+          },
+          "dropped 25%": {
+            "drift": 0.005507266603247748,
+            "seq_drift": 0.02936646540959676,
+            "mae": 2.6774036943912507
+          },
+          "dropped 50%": {
+            "drift": 0.040456335281002495,
+            "seq_drift": 0.2018281703193982,
+            "mae": 2.696098349491755
+          },
+          "dropped 75%": {
+            "drift": 0.17684464048749454,
+            "seq_drift": 0.5793463741739591,
+            "mae": 2.866017003854116
+          }
+        },
+        "sequence_length": {
+          "L=2": {
+            "drift": 0.34490453749895095,
+            "seq_drift": 0.545169685781002,
+            "mae": 0.04734227231570653
+          },
+          "L=3": {
+            "drift": 0.2380525349173695,
+            "seq_drift": 0.3446115434169769,
+            "mae": 0.14531619768393667
+          },
+          "L=4": {
+            "drift": 0.2524420218542218,
+            "seq_drift": 0.3200004406273365,
+            "mae": 0.21626679860055448
+          },
+          "L=6": {
+            "drift": 0.28535997252911327,
+            "seq_drift": 0.3165618032217026,
+            "mae": 0.2905788108706474
+          },
+          "L=8": {
+            "drift": 0.29380221106112003,
+            "seq_drift": 0.31824830919504166,
+            "mae": 0.36870837546885016
+          },
+          "L=12": {
+            "drift": 0.2618561776354909,
+            "seq_drift": 0.3105026721954346,
+            "mae": 0.6204393371939659
+          },
+          "L=16": {
+            "drift": 0.11059717363677919,
+            "seq_drift": 0.21729733943939208,
+            "mae": 0.9269742764532566
+          },
+          "L=24": {
+            "drift": 0.28533077870379203,
+            "seq_drift": 0.8611076653003693,
+            "mae": 1.8390494510531425
+          }
+        },
+        "reidentification": {
+          "2": 0.075,
+          "3": 0.05,
+          "4": 0.05,
+          "6": 0.025,
+          "8": 0.025,
+          "12": 0.025,
+          "16": 0.125
+        },
+        "cloud_observed": {
+          "<5%": 2.5517579228822203,
+          "5-20%": 2.9297249699831824,
+          "20-50%": null,
+          ">=50%": null
+        },
+        "cloud_simulated": {
+          "10% of each image occluded": {
+            "drift": 0.009456707816570997,
+            "mae": 2.62949161529541
+          },
+          "25% of each image occluded": {
+            "drift": 0.02792472168803215,
+            "mae": 2.6616119861602785
+          },
+          "50% of each image occluded": {
+            "drift": 0.08667764142155647,
+            "mae": 2.5817558765411377
+          }
+        }
+      },
+      "notes": ""
+    }
+  },
+  "elapsed_seconds": 10053.1
+}

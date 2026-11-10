@@ -36,3 +36,8 @@ src/output/
 # Evaluation feature caches (large, regenerable); results themselves are kept
 src/artifacts/eval/**/cache/
 src/artifacts/eval/*.zip
+
+# Event-labelling scene downloads (537 MB, regenerable by run_labeling.py)
+pipelines/event_labeling/cache/
+# Manifest backups written by fetch_processing_baselines.py
+src/artifacts/manifests/*.bak

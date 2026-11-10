@@ -1,0 +1,109 @@
+{
+  "mae_years": 2.638323879856544,
+  "mae_ci": [
+    2.5994457956173593,
+    2.6787856691431853
+  ],
+  "rmse_years": 3.2974489363020676,
+  "spearman": 0.4884487616408654,
+  "n_pairs": 15420,
+  "n_glaciers": 40,
+  "mae_by_gap_range": {
+    "<0.5": 0.10461731468414588,
+    "0.5-1": 0.4351656076319294,
+    "1-2": 1.1528038753153338,
+    "2-4": 2.5443978555382496,
+    ">=4": 5.125273452585669
+  },
+  "best_metadata_baseline_mae": 0.08672553227570673,
+  "probe_mae": {
+    "ridge probe [student] timestamp_out": 1.3461661175595192,
+    "ridge probe [student] visual_pool": 1.4258538469701194,
+    "ridge probe [random] timestamp_out": 0.22366177333535775,
+    "ridge probe [random] visual_pool": 1.4598569818991014
+  },
+  "pair_order_max_abs_diff": 2.9802322387695312e-08,
+  "all_predictors": [
+    {
+      "predictor": "Head 2 (trained, student)",
+      "features": "post-TET timestamp_out",
+      "n_pairs": 15420,
+      "MAE_yr": 2.638323879856544,
+      "MAE_95CI": "[2.599, 2.679]",
+      "RMSE_yr": 3.2974489363020676,
+      "Spearman": 0.4884487616408654
+    },
+    {
+      "predictor": "metadata: train-mean gap",
+      "features": "metadata only (no images, no true gap)",
+      "n_pairs": 15420,
+      "MAE_yr": 1.7278015175775943,
+      "MAE_95CI": "[1.709, 1.748]",
+      "RMSE_yr": 2.0547945115170956,
+      "Spearman": null
+    },
+    {
+      "predictor": "metadata: train-median gap",
+      "features": "metadata only (no images, no true gap)",
+      "n_pairs": 15420,
+      "MAE_yr": 1.698922791537683,
+      "MAE_95CI": "[1.675, 1.723]",
+      "RMSE_yr": 2.0725095336666226,
+      "Spearman": null
+    },
+    {
+      "predictor": "metadata: linear(index diff, length, season diff)",
+      "features": "metadata only (no images, no true gap)",
+      "n_pairs": 15420,
+      "MAE_yr": 0.08680450252772401,
+      "MAE_95CI": "[0.085, 0.088]",
+      "RMSE_yr": 0.10605028415195528,
+      "Spearman": 0.9982790129465514
+    },
+    {
+      "predictor": "metadata: boosted trees(index diff, length, season diff)",
+      "features": "metadata only (no images, no true gap)",
+      "n_pairs": 15420,
+      "MAE_yr": 0.08672553227570673,
+      "MAE_95CI": "[0.085, 0.088]",
+      "RMSE_yr": 0.1060040899733148,
+      "Spearman": 0.9982790129465514
+    },
+    {
+      "predictor": "ridge probe [student] timestamp_out",
+      "features": "post-TET (dates visible to TET)",
+      "n_pairs": 15420,
+      "MAE_yr": 1.3461661175595192,
+      "MAE_95CI": "[1.302, 1.388]",
+      "RMSE_yr": 1.711242197965545,
+      "Spearman": 0.5729815296243114
+    },
+    {
+      "predictor": "ridge probe [student] visual_pool",
+      "features": "pre-TET appearance only",
+      "n_pairs": 15420,
+      "MAE_yr": 1.4258538469701194,
+      "MAE_95CI": "[1.396, 1.457]",
+      "RMSE_yr": 1.7992791913265793,
+      "Spearman": 0.529645409467358
+    },
+    {
+      "predictor": "ridge probe [random] timestamp_out",
+      "features": "post-TET (dates visible to TET)",
+      "n_pairs": 15420,
+      "MAE_yr": 0.22366177333535775,
+      "MAE_95CI": "[0.213, 0.235]",
+      "RMSE_yr": 0.30511069394609064,
+      "Spearman": 0.992401337272228
+    },
+    {
+      "predictor": "ridge probe [random] visual_pool",
+      "features": "pre-TET appearance only",
+      "n_pairs": 15420,
+      "MAE_yr": 1.4598569818991014,
+      "MAE_95CI": "[1.425, 1.494]",
+      "RMSE_yr": 1.845491425759882,
+      "Spearman": 0.4818965391788742
+    }
+  ]
+}

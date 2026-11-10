@@ -4,3 +4,38 @@
 2026-11-09 11:04:27,713 | INFO    | extracted 10/40 glaciers (172.8s each, ~86 min left)
 2026-11-09 11:16:02,337 | INFO    | extracted 15/40 glaciers (161.5s each, ~67 min left)
 2026-11-09 11:27:19,095 | INFO    | extracted 20/40 glaciers (155.0s each, ~52 min left)
+2026-11-09 11:38:43,895 | INFO    | extracted 25/40 glaciers (151.4s each, ~38 min left)
+2026-11-09 11:48:47,442 | INFO    | extracted 30/40 glaciers (146.2s each, ~24 min left)
+2026-11-09 11:58:19,767 | INFO    | extracted 35/40 glaciers (141.7s each, ~12 min left)
+2026-11-09 12:08:00,059 | INFO    | extracted 40/40 glaciers (138.5s each, ~0 min left)
+2026-11-09 12:08:02,871 | INFO    | extracting ['student', 'random'] for 14 glaciers (train split) ...
+2026-11-09 12:19:48,107 | INFO    | extracted 5/14 glaciers (139.7s each, ~21 min left)
+2026-11-09 12:29:23,161 | INFO    | extracted 10/14 glaciers (127.3s each, ~8 min left)
+2026-11-09 12:39:29,969 | INFO    | extracted 14/14 glaciers (134.3s each, ~0 min left)
+2026-11-09 12:39:30,382 | INFO    | evaluating 40 glaciers / 1440 timestamps (test split)
+2026-11-09 12:39:30,391 | INFO    | [head2] held-out Head 2 evaluation + shortcut diagnostics
+2026-11-09 12:39:42,476 | INFO    | metadata baselines fitted on 40260 train pairs (671 glaciers)
+2026-11-09 12:39:56,780 | INFO    | [head2] MAE 2.638 yr (CI 2.599-2.679) | best metadata baseline 0.087 | order diff 3.0e-08
+2026-11-09 12:39:56,780 | INFO    | [head2] finished in 26.4s
+2026-11-09 12:39:56,781 | INFO    | [embedding] health, variance decomposition, probes, t-SNE
+2026-11-09 12:40:18,076 | INFO    | [embedding] student: erank 22.4, eta2(glacier) 0.101, eta2(season|glacier) 0.211
+2026-11-09 12:40:31,796 | INFO    | [embedding] random: erank 50.8, eta2(glacier) 0.178, eta2(season|glacier) 0.142
+2026-11-09 12:40:48,566 | INFO    | [embedding] finished in 51.8s
+2026-11-09 12:40:48,566 | INFO    | [trajectory] smoothness, drift vs time, drift vs pixel change
+2026-11-09 12:40:57,252 | INFO    | [trajectory] student: path_ratio 0.552, rho(gap, same season) 0.459, rho(pixel) 0.773
+2026-11-09 12:40:57,252 | INFO    | [trajectory] finished in 8.7s
+2026-11-09 12:40:57,253 | INFO    | [retrieval] identity + within-glacier state retrieval
+2026-11-09 12:40:57,777 | INFO    | [retrieval] student              P@1 0.534 (chance 0.025) mAP 0.084 | same-season@1 0.495 (chance 0.228)
+2026-11-09 12:40:58,215 | INFO    | [retrieval] random               P@1 0.285 (chance 0.025) mAP 0.064 | same-season@1 0.302 (chance 0.228)
+2026-11-09 12:40:58,817 | INFO    | [retrieval] raw pixels (32x32)   P@1 0.986 (chance 0.025) mAP 0.414 | same-season@1 0.669 (chance 0.228)
+2026-11-09 12:41:01,278 | INFO    | [retrieval] finished in 4.0s
+2026-11-09 12:41:01,279 | INFO    | [robustness] missing timestamps, sequence length, cloud cover
+2026-11-09 13:11:56,586 | INFO    | [robustness] simulated occlusion 10% on 5 glaciers
+2026-11-09 13:16:12,043 | INFO    | extracted 5/? glaciers (51.1s each, ~nan min left)
+2026-11-09 13:16:12,142 | INFO    | [robustness] simulated occlusion 25% on 5 glaciers
+2026-11-09 13:19:31,909 | INFO    | extracted 5/? glaciers (40.0s each, ~nan min left)
+2026-11-09 13:19:31,969 | INFO    | [robustness] simulated occlusion 50% on 5 glaciers
+2026-11-09 13:23:01,594 | INFO    | extracted 5/? glaciers (41.9s each, ~nan min left)
+2026-11-09 13:23:04,639 | INFO    | [robustness] finished in 2523.4s
+2026-11-09 13:23:05,190 | INFO    | done. report: D:\Kush\2nd Year\projects\glacier\implementation\src\artifacts\eval\output__step6720__20261109_103531__full\REPORT.md
+2026-11-09 13:23:05,191 | INFO    | zip (without cache): D:\Kush\2nd Year\projects\glacier\implementation\src\artifacts\eval\output__step6720__20261109_103531__full.zip
